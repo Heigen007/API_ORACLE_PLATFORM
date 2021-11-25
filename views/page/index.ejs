@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('./head'); %>
+</head>
+<body>
+    
+    <div id="app">
+        <div class="buttons">
+            <div class="but grey" v-bind:class="{ chosenGrey: chosenMainPage == 'settings'}" @click='chosenMainPage = "settings"'>Settings</div>
+            <div class="but grey" style="margin-left: 5px;" v-bind:class="{ chosenGrey: chosenMainPage == 'docs'}" @click='chosenMainPage = "docs"'>Docs</div>
+        </div>
+        <div class = "settings" v-if="chosenMainPage == 'settings'">
+            <div class="security" v-if='isModal'>
+                <div>
+                    <div>Введите пароль:</div>
+                    <input type="password" v-model='password'>
+                </div> 
+                <button @click='checkPassword'>Проверить</button>
+            </div>
+            <h1 v-if="!isModal">Settings</h1>
+            <div v-if="!isModal" class="services">
+                <div class="service">
+                    <div class="endpoint center">ENDPOINT</div>
+                    <div class="endpoint center">VERSION_NAME</div>
+                    <div class="versionName center">ID</div>
+                </div>
+                <div class="service" v-bind:class="{ active: selectedObject.VERSION_ID==el.VERSION_ID}" @click="selectedObject=el" v-for="(el, i) in services" :key="i">
+                    <div class="endpoint">{{el.ENDPOINT}}</div>
+                    <div class="endpoint">{{el.VERSION_NAME}}</div>
+                    <div class="versionName">{{el.VERSION_ID}}</div>
+                </div>
+            </div>
+            <div v-if="!isModal" class="buttons">
+                <div class="but create" v-bind:class="{ chosen: chosenPage == 'create-new-service'}" @click='chosenPage = "create-new-service"'>Create new</div>
+                <div class="but edit" v-bind:class="{ chosen: chosenPage == 'update-service'}" @click='chosenPage = "update-service"'>Create version from selected</div>
+                <div class="but edit" v-bind:class="{ chosen: chosenPage == 'update-version'}" @click='chosenPage = "update-version"'>Update selected version</div>
+            </div>
+            <div v-if="!isModal" class="mainBody">
+                <keep-alive>
+                    <create-new-service v-if="chosenPage == 'create-new-service'"></create-new-service>
+                    <update-service v-if="chosenPage == 'update-service'" :selected-object="selectedObject"></update-service>
+                    <update-version v-if="chosenPage == 'update-version'" :selected-object="selectedObject"></update-version>
+                </keep-alive>
+            </div>
+        </div>
+        <div class="docs" v-if="chosenMainPage == 'docs'">
+            <h1>Docs</h1>
+            <div class="accordion" id="accordionExample">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingOne">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                            SETTINGS
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <strong>Settings.</strong> This part helps you to decide, what action you want to do.<br>
+                            You can: create new service, create new version or update the version of the service, that already exists.<br>
+                            To create new version or update the version of the service, that already exists you need to choose the version from the table by clicking on it.<br>
+                            Then you should write down 3 parameters:<br>
+                            <strong>Version name</strong>(version from 10th of August) - the name of the version(you can see it in the second column of the table)
+                            <strong>Endpoint</strong>(someEndpoint/someApi/andSoOn) - you <strong>should not</strong> put <code>'/'</code> at the beginning of the Endpoint<br>
+                            <strong>Is enabled</strong>(true/false) - you can define the status of the service. If false, service does not work.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            POOL parameters
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <strong>POOL parameters.</strong> There are 9 pool parameters you can define. Here is the short description, all the information you can find in official documentation(<a target="__blank" href="https://oracle.github.io/node-oracledb/doc/api.html#createpoolpoolattrs">DOCUMENTATION</a>)<br>
+                            <strong>1. user</strong> - Database username(SOME_USER_NAME)<br>
+                            <strong>2. password</strong> - Database password(SOME_password)<br>
+                            <strong>3. connectString</strong> - Database connection string - you can find it in TNSNAMES for example((DESCRIPTION =(ADDRESS_LIST =(ADDRESS = (PROTOCOL = TCP)(HOST = 11.1.1.111)(PORT = 1111)))(CONNECT_DATA =(SERVICE_NAME = SOMEDATA))))<br>
+                            <strong>4. poolMin</strong> - The number of connections established to the database when a pool is created.<br>
+                            <strong>5. poolMax</strong> - The maximum number of connections to which a connection pool can grow.<br>
+                            <strong>6. poolTimeout</strong> - The number of seconds after which idle connections (unused in the pool) may be terminated. So, if there is no current connections, the number of connections will be equal to poolMin property.<br>
+                            <strong>7. poolPingInterval</strong> - This property is not important, it is used to validate the connection in the pool.<br>
+                            <strong>8. queueMax</strong> - The maximum number of pending connections that can be queued. If queue reaches queueMax number, any future requests will immediately return an error and will not be queued. You can set it to <strong>-1</strong> to make the queue not limited.<br>
+                            <strong>9. queueTimeout</strong> - The number of milliseconds after which connection requests waiting in the connection request queue are terminated. If queueTimeout is set to 0, then queued connection requests are never terminated.<br>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingThree">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                            Parameters
+                        </button>
+                    </h2>
+                    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <strong>Parameters. </strong> You can add as many parameters as you want. Each parameter has 4 settings.<br>
+                            <strong>Name</strong> - the name of the parameter that will be used in http request. Notice, that "name" and "Name" are different parameters because of the letter case.<br>
+                            <strong>Type</strong> -  <strong>Integer</strong>(12), <strong>Number</strong>(12.5), <strong>String</strong>("someString")<br>
+                            <strong>Location</strong><br>
+                            <div style="margin-left: 10px">
+                                <strong>Path</strong>(http://someHost:8080/endpoint1/<strong>12</strong>)<br>
+                                <strong>URL</strong>(http://someHost:8080/endpoint1<strong>?name=someString</strong>) - <strong style="color: red">NOTE</strong>, that strings can not has <code>"</code> around them. If they have it, the output will be like that: {"Name": "\"h\""}<br>
+                                <strong>Header</strong> - you can add some header parameters if you want.<br>
+                                <strong>Is required</strong> - you can define the requiredness of the parameter.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingFour">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="true" aria-controls="collapseFour">
+                            SQL query
+                        </button>
+                    </h2>
+                    <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <strong>SQL query.</strong> Here you should write your sql code. You should use parameters you want to put into your sql code in like this: <code>${name}</code>.<br>
+                            <strong style="color: red">NOTE!</strong> If your parameter is optional(not required) you should use such structure:<br>
+                            <code>
+                                {{sqlExStartCode}}<br>
+                                <div style="white-space: pre;">    ,${name} AS name</div>
+                                {{sqlExEndCode}}
+                            </code><br>
+                            Tou must follow this structure of tags if you have optional parameter.<br>
+                            <strong>FULL CODE EXAMPLE</strong><br>
+                            <code>
+                                <div v-for="(el,i) in sqlFullCode" :key="i" style="white-space: pre;">{{el}}<br></div>
+                            </code>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingFive">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="true" aria-controls="collapseFive">
+                            Final JSON format
+                        </button>
+                    </h2>
+                    <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <strong>Final JSON format.</strong> This is the last part of your service code. In the example code you will see some code, but all you nee to know is that the result. that Database returns you can find in <code>result</code><br>
+                            And to send some response back on http request you should use <code>res.status(httpCode(optional - 200 by default)).send(somethingHere)</code><br>
+                            Database returns object, where all object properties has UPCASE. So you need to write down some manipulations and create your own structure.<br>
+                            <strong>EXAMPLE</strong><br>
+                            <code>
+                                <div v-for="(el,i) in jsFullCode" :key="i" style="white-space: pre;">{{el}}<br></div>
+                            </code>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingSix">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix" aria-expanded="true" aria-controls="collapseSix">
+                            Updating your service by HTTP request
+                        </button>
+                    </h2>
+                    <div id="collapseSix" class="accordion-collapse collapse" aria-labelledby="headingSix" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            When you updated or created new version of the service, or created a new service, you can activate the latest versions by two ways:<br>
+                            <strong>1)</strong> - you can restart the server - that will activate the newest versions of all services(if they are enabled('Is Enabled' property))<br>
+                            <strong>2)</strong> - you can use http method, where you shoul just put the parameter of version of the service. All versions in all services are unique, so there are no problems with this.<br>
+                            Example<br>
+                            <code>http://localhost:8080/makeHttpListeners?methodId=27</code><br>
+                            'methodId' property you can find in all services table in third column.<br>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+    <script>
+        Vue.component('create-new-service', {
+            data: function () {
+                return {
+                    info:{
+                        ENDPOINT: "",
+                        VERSION_NAME: "",
+                        IS_ENABLED: true,
+                        SQL_CODE: "",
+                        PARAMS: [],
+                        pool:{
+                            CONNECT_STRING: "",
+                            POOL_USER: "",
+                            POOL_PASSWORD: "",
+                            POOL_MAX: 1,
+                            POOL_MIN: 1,
+                            POOL_TIMEOUT: 60,
+                            POOL_PING_INTERVAL: 60,
+                            QUEUE_MAX: 500,
+                            QUEUE_TIMEOUT: 60000
+                        },
+                        JSON_CONFIG: ""
+                    },
+                    selectedObject: {}
+                }
+            },
+            methods:{
+                addParam(){
+                    this.info.PARAMS.push({NAME: '',TYPE:'',LOCATION:'',IS_REQUIRED:false})
+                },
+                removeParam(){
+                    this.info.PARAMS.pop()
+                },
+                createService(){
+                    if(!this.checkData()) return
+                    var url = window.location.href
+                    fetch(url + "createService", {
+                        method: 'POST',
+                        body: JSON.stringify(this.info),
+                        headers:{
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then((data) => {
+                        if(data.status == 200){
+                            location.reload()
+                        } else {
+                            alert("Some error occured!")
+                        }
+                    })
+                },
+                checkData(){
+                    if (this.info.VERSION_NAME && this.info.ENDPOINT && this.info.SQL_CODE && this.checkParams(this.info.PARAMS)
+                       && this.info.pool.CONNECT_STRING && this.info.pool.POOL_USER && this.info.pool.POOL_PASSWORD && this.info.pool.POOL_MIN
+                       && this.info.pool.POOL_MAX && this.info.pool.POOL_TIMEOUT && this.info.pool.POOL_PING_INTERVAL && this.info.pool.QUEUE_MAX
+                       && this.info.pool.QUEUE_TIMEOUT) return true
+                    return false
+                },
+                checkParams(arr){
+                    var checkP = false
+                    arr.forEach(el => {
+                        if (!el.NAME || !el.TYPE || !el.LOCATION) checkP = true
+                    })
+                    return !checkP
+                }
+            },
+            template: 
+            `
+            <div class="mdiv">
+                <div class="inputDiv">
+                    <div class="label">Version name: </div>
+                    <input class="input" type="text" v-model="info.VERSION_NAME">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">Endpoint: </div>
+                    <input class="input" type="text" v-model="info.ENDPOINT">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">Is Enabled: </div>
+                    <input class="input" type="checkbox" v-model="info.IS_ENABLED">
+                </div>
+                <h2>Pool parameters:</h2>
+                <div class="inputDiv">
+                    <div class="label">user: </div>
+                    <input class="input" type="text" v-model="info.pool.POOL_USER">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">password: </div>
+                    <input class="input" type="text" v-model="info.pool.POOL_PASSWORD">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">connectString: </div>
+                    <input class="input" type="text" v-model="info.pool.CONNECT_STRING">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">poolMin: </div>
+                    <input class="input" type="number" v-model="info.pool.POOL_MIN">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">poolMax: </div>
+                    <input class="input" type="number" v-model="info.pool.POOL_MAX">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">poolTimeout: </div>
+                    <input class="input" type="number" v-model="info.pool.POOL_TIMEOUT">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">poolPingInterval: </div>
+                    <input class="input" type="number" v-model="info.pool.POOL_PING_INTERVAL">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">queueMax: </div>
+                    <input class="input" type="number" v-model="info.pool.QUEUE_MAX">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">queueTimeout: </div>
+                    <input class="input" type="number" v-model="info.pool.QUEUE_TIMEOUT">
+                </div>
+                <h2 class="mt-2">Parameters:</h2>
+                <div class="parametres">
+                    <div class="parametr" v-for="(el, i) in info.PARAMS" :key="i">\
+                        <div class="sminputDiv">
+                            <div class="label">Name:</div>
+                            <input class="input" type="text" v-model="el.NAME">
+                        </div>
+                        <div class="sminputDiv">
+                            <div class="label">Type:</div>
+                            <select v-model="el.TYPE">
+                                <option disabled>Выберите героя</option>
+                                <option value="Integer">Integer</option>
+                                <option value="Number">Number</option>
+                                <option value="String">String</option>
+                            </select>
+                        </div>
+                        <div class="sminputDiv">
+                            <div class="label">Location:</div>
+                            <select v-model="el.LOCATION">
+                                <option disabled>Выберите героя</option>
+                                <option value="URL">URL</option>
+                                <option value="Header">Header</option>
+                                <option value="Path">Path</option>
+                            </select>
+                        </div>
+                        <div class="sminputDiv">
+                            <div class="label">Required:</div>
+                            <input class="input" type="checkbox" v-model="el.IS_REQUIRED">
+                        </div>
+                        <hr/>
+                    </div>
+                    <div class="smbut" style="background-color: grey" @click="addParam">Add parameter</div>
+                    <div class="smbut" style="background-color: red" @click="removeParam">Remove parameter</div>
+                </div>
+                <h2>SQL query:</h2>
+                <div style="font-size: 0.8em">Example on the docs page</div>
+                <div class="sqlQuery">
+                    <div class="inputDiv">
+                        <textarea class="input" type="text" v-model="info.SQL_CODE"></textarea>
+                    </div>
+                </div>
+                <h2>Final JSON format:</h2>
+                <div style="font-size: 0.8em">Find more information on docs page</div>
+                <div class="sqlQuery">
+                    <div class="inputDiv">
+                        <textarea class="input" type="text" v-model="info.JSON_CONFIG"></textarea>
+                    </div>
+                </div>
+                <div class="but create mt" @click='createService'>Create</div>
+            </div>
+            `
+        })
+        Vue.component('update-service', {
+            data: function () {
+                return {
+                    info:{
+                        ENDPOINT: "",
+                        VERSION_NAME: "",
+                        IS_ENABLED: false,
+                        SQL_CODE: "",
+                        PARAMS: [],
+                        pool:{
+                            CONNECT_STRING: "",
+                            POOL_USER: "",
+                            POOL_PASSWORD: "",
+                            POOL_MAX: null,
+                            POOL_MIN: null,
+                            POOL_TIMEOUT: null,
+                            POOL_PING_INTERVAL: null,
+                            QUEUE_MAX: null,
+                            QUEUE_TIMEOUT: null
+                        },
+                        JSON_CONFIG: ""
+                    }
+                }
+            },
+            props: {
+                selectedObject: Object
+            },
+            watch: {
+                selectedObject: function () {
+                    if(this.selectedObject.ENDPOINT) this.getInfo()
+                },
+            },
+            mounted(){
+                if(this.selectedObject.ENDPOINT) this.getInfo()
+            },
+            methods:{
+                addParam(){
+                    this.info.PARAMS.push({NAME: '',TYPE:'',LOCATION:'',IS_REQUIRED:false})
+                },
+                removeParam(){
+                    this.info.PARAMS.pop()
+                },
+                createService(){
+                    if(!this.checkData()) return
+                    var url = window.location.href
+                    fetch(url + "createService", {
+                        method: 'POST',
+                        body: JSON.stringify(this.info),
+                        headers:{
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then((data) => {
+                        if(data.status == 200){
+                            location.reload()
+                        } else {
+                            alert("Some error occured!")
+                        }
+                    })
+                },
+                createNewVersion(){
+                    if(!this.checkData()) return
+                    var url = window.location.href
+                    fetch(url + "createNewVersion", {
+                        method: 'POST',
+                        body: JSON.stringify(this.info),
+                        headers:{
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then((data) => {
+                        if(data.status == 200){
+                            location.reload()
+                        } else {
+                            alert("Some error occured!")
+                        }
+                    })
+                },
+                checkData(){
+                    if (this.info.VERSION_NAME && this.info.ENDPOINT && this.info.SQL_CODE && this.checkParams(this.info.PARAMS)
+                       && this.info.pool.CONNECT_STRING && this.info.pool.POOL_USER && this.info.pool.POOL_PASSWORD && this.info.pool.POOL_MIN
+                       && this.info.pool.POOL_MAX && this.info.pool.POOL_TIMEOUT && this.info.pool.POOL_PING_INTERVAL && this.info.pool.QUEUE_MAX
+                       && this.info.pool.QUEUE_TIMEOUT) return true
+                    return false
+                },
+                checkParams(arr){
+                    var checkP = false
+                    arr.forEach(el => {
+                        if (!el.NAME || !el.TYPE || !el.LOCATION) checkP = true
+                    })
+                    return !checkP
+                },
+                getInfo(){
+                    var url = window.location.href
+                    var copy;
+                    fetch(url + "getServiceInfo", {
+                    method: 'POST',
+                    body: JSON.stringify({ENDPOINT: this.selectedObject.ENDPOINT, VERSION_ID: this.selectedObject.VERSION_ID}),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                    })
+                    .then(response => {
+                        return response.json()
+                    })
+                    .then(res => {
+                        copy = res
+                        copy.pool = {
+                            CONNECT_STRING: copy.CONNECT_STRING,
+                            POOL_USER: copy.POOL_USER,
+                            POOL_PASSWORD: copy.POOL_PASSWORD,
+                            POOL_MAX: copy.POOL_MAX,
+                            POOL_MIN: copy.POOL_MIN,
+                            POOL_TIMEOUT: copy.POOL_TIMEOUT,
+                            POOL_PING_INTERVAL: copy.POOL_PING_INTERVAL,
+                            QUEUE_MAX: copy.QUEUE_MAX,
+                            QUEUE_TIMEOUT: copy.QUEUE_TIMEOUT
+                        }
+                        this.info = copy
+                    })
+                }
+            },
+            template: 
+            `
+            <div class="mdiv">
+                <div class="inputDiv">
+                    <div class="label">Version name: </div>
+                    <input class="input" type="text" v-model="info.VERSION_NAME">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">Endpoint: </div>
+                    <input class="input" type="text"c readonly v-model="info.ENDPOINT">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">Is Enabled: </div>
+                    <input class="input" type="checkbox" disabled="true" v-model="info.IS_ENABLED">
+                </div>
+                <h2>Pool parameters:</h2>
+                <div class="inputDiv">
+                    <div class="label">user: </div>
+                    <input class="input" type="text" v-model="info.pool.POOL_USER">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">password: </div>
+                    <input class="input" type="text" v-model="info.pool.POOL_PASSWORD">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">connectString: </div>
+                    <input class="input" type="text" v-model="info.pool.CONNECT_STRING">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">poolMin: </div>
+                    <input class="input" type="number" v-model="info.pool.POOL_MIN">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">poolMax: </div>
+                    <input class="input" type="number" v-model="info.pool.POOL_MAX">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">poolTimeout: </div>
+                    <input class="input" type="number" v-model="info.pool.POOL_TIMEOUT">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">poolPingInterval: </div>
+                    <input class="input" type="number" v-model="info.pool.POOL_PING_INTERVAL">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">queueMax: </div>
+                    <input class="input" type="number" v-model="info.pool.QUEUE_MAX">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">queueTimeout: </div>
+                    <input class="input" type="number" v-model="info.pool.QUEUE_TIMEOUT">
+                </div>
+                <h2 class="mt-2">Parameters:</h2>
+                <div class="parametres">
+                    <div class="parametr" v-for="(el, i) in info.PARAMS" :key="i">\
+                        <div class="sminputDiv">
+                            <div class="label">Name:</div>
+                            <input class="input" type="text" v-model="el.NAME">
+                        </div>
+                        <div class="sminputDiv">
+                            <div class="label">Type:</div>
+                            <select v-model="el.TYPE">
+                                <option disabled>Выберите героя</option>
+                                <option value="Integer">Integer</option>
+                                <option value="Number">Number</option>
+                                <option value="String">String</option>
+                            </select>
+                        </div>
+                        <div class="sminputDiv">
+                            <div class="label">Location:</div>
+                            <select v-model="el.LOCATION">
+                                <option disabled>Выберите героя</option>
+                                <option value="URL">URL</option>
+                                <option value="Header">Header</option>
+                                <option value="Path">Path</option>
+                            </select>
+                        </div>
+                        <div class="sminputDiv">
+                            <div class="label">Required:</div>
+                            <input class="input" type="checkbox" v-model="el.IS_REQUIRED">
+                        </div>
+                        <hr/>
+                    </div>
+                    <div class="smbut" style="background-color: grey" @click="addParam">Add parameter</div>
+                    <div class="smbut" style="background-color: red" @click="removeParam">Remove parameter</div>
+                </div>
+                <h2>SQL query:</h2>
+                <div style="font-size: 0.8em">Example on the docs page</div>
+                <div class="sqlQuery">
+                    <div class="inputDiv">
+                        <textarea class="input" type="text" v-model="info.SQL_CODE"></textarea>
+                    </div>
+                </div>
+                <h2>Final JSON format:</h2>
+                <div style="font-size: 0.8em">Find more information on docs page</div>
+                <div class="sqlQuery">
+                    <div class="inputDiv">
+                        <textarea class="input" type="text" v-model="info.JSON_CONFIG"></textarea>
+                    </div>
+                </div>
+                <div class="but create mt" @click='createNewVersion'>Create version from selected</div>
+            </div>
+            `
+        })
+
+        Vue.component('update-version', {
+            data: function () {
+                return {
+                    info:{
+                        ENDPOINT: "",
+                        VERSION_NAME: "",
+                        IS_ENABLED: false,
+                        SQL_CODE: "",
+                        PARAMS: [],
+                        pool:{
+                            CONNECT_STRING: "",
+                            POOL_USER: "",
+                            POOL_PASSWORD: "",
+                            POOL_MAX: null,
+                            POOL_MIN: null,
+                            POOL_TIMEOUT: null,
+                            POOL_PING_INTERVAL: null,
+                            QUEUE_MAX: null,
+                            QUEUE_TIMEOUT: null
+                        },
+                        JSON_CONFIG: ""
+                    }
+                }
+            },
+            props: {
+                selectedObject: Object
+            },
+            watch: {
+                selectedObject: function () {
+                    if(this.selectedObject.ENDPOINT) this.getInfo()
+                },
+            },
+            mounted(){
+                if(this.selectedObject.ENDPOINT) this.getInfo()
+            },
+            methods:{
+                addParam(){
+                    this.info.PARAMS.push({NAME: '',TYPE:'',LOCATION:'',IS_REQUIRED:false})
+                },
+                removeParam(){
+                    this.info.PARAMS.pop()
+                },
+                updateVersion(){
+                    if(!this.checkData()) return
+                    var url = window.location.href
+                    fetch(url + "updateVersion", {
+                        method: 'POST',
+                        body: JSON.stringify(this.info),
+                        headers:{
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then((data) => {
+                        if(data.status == 200){
+                            location.reload()
+                        } else {
+                            alert("Some error occured!")
+                        }
+                    })
+                },
+                checkData(){
+                    if (this.info.VERSION_NAME && this.info.ENDPOINT && this.info.SQL_CODE && this.checkParams(this.info.PARAMS)
+                       && this.info.pool.CONNECT_STRING && this.info.pool.POOL_USER && this.info.pool.POOL_PASSWORD && this.info.pool.POOL_MIN
+                       && this.info.pool.POOL_MAX && this.info.pool.POOL_TIMEOUT && this.info.pool.POOL_PING_INTERVAL && this.info.pool.QUEUE_MAX
+                       && this.info.pool.QUEUE_TIMEOUT) return true
+                    return false
+                },
+                checkParams(arr){
+                    var checkP = false
+                    arr.forEach(el => {
+                        if (!el.NAME || !el.TYPE || !el.LOCATION) checkP = true
+                    })
+                    return !checkP
+                },
+                getInfo(){
+                    var url = window.location.href
+                    var copy;
+                    fetch(url + "getServiceInfo", {
+                    method: 'POST',
+                    body: JSON.stringify({ENDPOINT: this.selectedObject.ENDPOINT, VERSION_ID: this.selectedObject.VERSION_ID}),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                    })
+                    .then(response => {
+                        return response.json()
+                    })
+                    .then(res => {
+                        copy = res
+                        copy.pool = {
+                            CONNECT_STRING: copy.CONNECT_STRING,
+                            POOL_USER: copy.POOL_USER,
+                            POOL_PASSWORD: copy.POOL_PASSWORD,
+                            POOL_MAX: copy.POOL_MAX,
+                            POOL_MIN: copy.POOL_MIN,
+                            POOL_TIMEOUT: copy.POOL_TIMEOUT,
+                            POOL_PING_INTERVAL: copy.POOL_PING_INTERVAL,
+                            QUEUE_MAX: copy.QUEUE_MAX,
+                            QUEUE_TIMEOUT: copy.QUEUE_TIMEOUT
+                        }
+                        this.info = copy
+                    })
+                }
+            },
+            template: 
+            `
+            <div class="mdiv">
+                <div class="inputDiv">
+                    <div class="label">Version name: </div>
+                    <input class="input" type="text" v-model="info.VERSION_NAME">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">Endpoint: </div>
+                    <input class="input" type="text"c readonly v-model="info.ENDPOINT">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">Is Enabled: </div>
+                    <input class="input" type="checkbox" disabled="true" v-model="info.IS_ENABLED">
+                </div>
+                <h2>Pool parameters:</h2>
+                <div class="inputDiv">
+                    <div class="label">user: </div>
+                    <input class="input" type="text" v-model="info.pool.POOL_USER">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">password: </div>
+                    <input class="input" type="text" v-model="info.pool.POOL_PASSWORD">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">connectString: </div>
+                    <input class="input" type="text" v-model="info.pool.CONNECT_STRING">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">poolMin: </div>
+                    <input class="input" type="number" v-model="info.pool.POOL_MIN">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">poolMax: </div>
+                    <input class="input" type="number" v-model="info.pool.POOL_MAX">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">poolTimeout: </div>
+                    <input class="input" type="number" v-model="info.pool.POOL_TIMEOUT">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">poolPingInterval: </div>
+                    <input class="input" type="number" v-model="info.pool.POOL_PING_INTERVAL">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">queueMax: </div>
+                    <input class="input" type="number" v-model="info.pool.QUEUE_MAX">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">queueTimeout: </div>
+                    <input class="input" type="number" v-model="info.pool.QUEUE_TIMEOUT">
+                </div>
+                <h2 class="mt-2">Parameters:</h2>
+                <div class="parametres">
+                    <div class="parametr" v-for="(el, i) in info.PARAMS" :key="i">\
+                        <div class="sminputDiv">
+                            <div class="label">Name:</div>
+                            <input class="input" type="text" v-model="el.NAME">
+                        </div>
+                        <div class="sminputDiv">
+                            <div class="label">Type:</div>
+                            <select v-model="el.TYPE">
+                                <option disabled>Выберите героя</option>
+                                <option value="Integer">Integer</option>
+                                <option value="Number">Number</option>
+                                <option value="String">String</option>
+                            </select>
+                        </div>
+                        <div class="sminputDiv">
+                            <div class="label">Location:</div>
+                            <select v-model="el.LOCATION">
+                                <option disabled>Выберите героя</option>
+                                <option value="URL">URL</option>
+                                <option value="Header">Header</option>
+                                <option value="Path">Path</option>
+                            </select>
+                        </div>
+                        <div class="sminputDiv">
+                            <div class="label">Required:</div>
+                            <input class="input" type="checkbox" v-model="el.IS_REQUIRED">
+                        </div>
+                        <hr/>
+                    </div>
+                    <div class="smbut" style="background-color: grey" @click="addParam">Add parameter</div>
+                    <div class="smbut" style="background-color: red" @click="removeParam">Remove parameter</div>
+                </div>
+                <h2>SQL query:</h2>
+                <div style="font-size: 0.8em">Example on the docs page</div>
+                <div class="sqlQuery">
+                    <div class="inputDiv">
+                        <textarea class="input" type="text" v-model="info.SQL_CODE"></textarea>
+                    </div>
+                </div>
+                <h2>Final JSON format:</h2>
+                <div style="font-size: 0.8em">Find more information on docs page</div>
+                <div class="sqlQuery">
+                    <div class="inputDiv">
+                        <textarea class="input" type="text" v-model="info.JSON_CONFIG"></textarea>
+                    </div>
+                </div>
+                <div class="but create mt" @click='updateVersion'>Update selected version</div>
+            </div>
+            `
+        })
+
+        var app = new Vue({
+            el: '#app',
+            data: {
+                chosenPage: "create-new-service",
+                chosenMainPage: "settings",
+                services: [],
+                selectedObject: {},
+                password: "",
+                isModal: true,
+                sqlExStartCode: '<if testParameter="name">',
+                sqlExEndCode: ' </if>',
+                sqlFullCode: ["SELECT ${age} AS AGe",'<if testParameter="name">','  ,${name} AS name','</if>',',1 AS NUMBERm','FROM REST_WEB_METHODS_PARAMETER','<if testParameter="name">', '  WHERE ${name} = \'someValue\'','</if>'],
+                jsFullCode: ['var finalArr = [];','var temp;','result.rows.forEach(el => {','  temp = {','    Age: el.AGE,','    Name: el.NAME,','    customNumber: el.NUMBERM','  }','  finalArr.push(temp)','})','res.status(200).send(finalArr)']
+            },
+            mounted(){
+                var url = window.location.href
+                fetch(url + "getServices")
+                .then(response => {
+                  return response.json()
+                })
+                .then(res => {this.services = res; if(res[0]) this.selectedObject = res[0]})
+            },
+            methods: {
+                checkPassword(){
+                    if(this.password == "myApiPass") this.isModal = false
+                }
+            }
+        })
+
+    </script>
+</body>
+</html>
