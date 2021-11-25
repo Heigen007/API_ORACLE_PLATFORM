@@ -61,8 +61,8 @@ app.post('/updateVersion', async function(req, res) {
 app.get('/makeHttpListeners', async function(req, res) {
   var param = req.query.methodId
   var result = await makeHttpListeners(param)
-  if(result) res.status(200).send()
-  res.status(500).send()
+  if(result) res.send()
+  else res.status(500).send()
 });
 
 async function makeHttpListeners(methodId){
@@ -150,15 +150,17 @@ async function makeHttpListeners(methodId){
       var paramsStr = ""
       var paramsArr = []
       var parMap = []
+      var isErr = false
       params.forEach(el2 => {
         result = checkParameter(req,el2)
-        if(!result) res.status(401).send()
+        if(!result) {isErr = true; res.status(400).send()}
         if(result != "NOT_GIVEN"){
           paramsStr+=`var ${el2.NAME} = ${result};\n`
           paramsArr.push(el2.NAME)
           parMap.push({name: el2.NAME, type: el2.TYPE})
         }
       })
+      if(isErr) return
       eval(paramsStr)
       if(el.SQL_CODE.includes("<if testParameter="))
       var sqlCopyStr = parseSql(el.SQL_CODE,paramsArr,parMap)
@@ -169,7 +171,7 @@ async function makeHttpListeners(methodId){
       if(el.JSON_CONFIG){
         eval(el.JSON_CONFIG)
       } else {
-        res.status(200).send(result)
+        res.send(result)
       }
     } else {
       var sqlString = eval('`'+el.SQL_CODE+'`')
@@ -179,7 +181,7 @@ async function makeHttpListeners(methodId){
       if(el.JSON_CONFIG){
         eval(el.JSON_CONFIG)
       } else {
-        res.status(200).send(result)
+        res.send(result)
       }
     }
   })
@@ -390,15 +392,17 @@ async function forLoopClosure(lastMethodsVersions, indexM){
         var paramsStr = ""
         var paramsArr = []
         var parMap = []
+        var isErr = false
         params.forEach(el2 => {
           result = checkParameter(req,el2)
-          if(!result) res.status(401).send()
+          if(!result) {isErr = true; res.status(400).send()}
           if(result != "NOT_GIVEN"){
             paramsStr+=`var ${el2.NAME} = ${result};\n`
             paramsArr.push(el2.NAME)
             parMap.push({name: el2.NAME, type: el2.TYPE})
           }
         })
+        if(isErr) return
         eval(paramsStr)
         console.log(el.SQL_CODE);
         var sqlCodeCopy = el.SQL_CODE
@@ -413,7 +417,7 @@ async function forLoopClosure(lastMethodsVersions, indexM){
         if(el.JSON_CONFIG){
           eval(el.JSON_CONFIG)
         } else {
-          res.status(200).send(result)
+          res.send(result)
         }
       } else {
         var sqlString = eval('`'+el.SQL_CODE+'`')
@@ -423,7 +427,7 @@ async function forLoopClosure(lastMethodsVersions, indexM){
         if(el.JSON_CONFIG){
           eval(el.JSON_CONFIG)
         } else {
-          res.status(200).send(result)
+          res.send(result)
         }
       }
     })
