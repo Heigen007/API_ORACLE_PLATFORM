@@ -1,6 +1,5 @@
 async function createService(oracledb, data) {
     try {
-      console.log(data);
       var connection = await oracledb.getConnection();
       var methodId, methodVersionId, parameterId;
       methodId = await connection.execute("SELECT REST_WEB_METHODS_SEQ.nextval FROM dual");
@@ -10,7 +9,7 @@ async function createService(oracledb, data) {
       sqlId = await connection.execute("SELECT REST_WEB_METHODS_SQL_SEQ.nextval FROM dual");
       sqlId = sqlId.rows[0].NEXTVAL;
       await connection.execute(`INSERT INTO REST_WEB_METHODS VALUES (${methodId}, '${data.ENDPOINT}', ${data.IS_ENABLED ? 1 : 0})`);
-      await connection.execute(`INSERT INTO REST_WEB_METHODS_VERSION VALUES (${methodVersionId}, '${data.VERSION_NAME}', ${methodId}, SYSDATE, '${data.pool.POOL_USER}', '${data.pool.POOL_PASSWORD}', '${data.pool.CONNECT_STRING}', ${data.pool.POOL_MIN}, ${data.pool.POOL_MAX}, ${data.pool.POOL_TIMEOUT}, ${data.pool.POOL_PING_INTERVAL}, ${data.pool.QUEUE_MAX}, ${data.pool.QUEUE_TIMEOUT})`);
+      await connection.execute(`INSERT INTO REST_WEB_METHODS_VERSION VALUES (${methodVersionId}, '${data.VERSION_NAME}', ${methodId}, SYSDATE, '${data.pool.POOL_USER}', '${data.pool.POOL_PASSWORD}', '${data.pool.CONNECT_STRING}', ${data.pool.POOL_MIN}, ${data.pool.POOL_MAX}, ${data.pool.POOL_TIMEOUT}, ${data.pool.POOL_PING_INTERVAL}, ${data.pool.QUEUE_MAX}, ${data.pool.QUEUE_TIMEOUT}, '${data.DESCRIPTION}')`);
       for(let i = 0; i < data.PARAMS.length; i++){
         parameterId = await connection.execute("SELECT REST_WEB_METHODS_PARAMETER_SEQ.nextval FROM dual");
         parameterId = parameterId.rows[0].NEXTVAL;

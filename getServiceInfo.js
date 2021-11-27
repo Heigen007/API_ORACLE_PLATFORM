@@ -42,7 +42,8 @@ async function createService(oracledb, data) {
           rwmv.POOL_PING_INTERVAL,
           rwmv.QUEUE_MAX,
           rwmv.QUEUE_TIMEOUT,
-          rwmv.ID AS VERSION_ID
+          rwmv.ID AS VERSION_ID,
+          rwmv.DESCRIPTION
         FROM
           REST_WEB_METHODS rwm,
           REST_WEB_METHODS_VERSION rwmv,

@@ -23,7 +23,7 @@ async function init() {
         poolMin       : 3
       });
   
-      app.listen(port, () => {
+      app.listen(port, "192.168.1.4", () => {
         console.log("Server started!");
         makeMAINHttpListeners()
       })
@@ -166,12 +166,15 @@ async function makeHttpListeners(methodId){
       var sqlCopyStr = parseSql(el.SQL_CODE,paramsArr,parMap)
       var sqlString = eval('`'+sqlCopyStr+'`')
       var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
-      var result = await connection2.execute(sqlString);
-      await connection2.close();
-      if(el.JSON_CONFIG){
-        eval(el.JSON_CONFIG)
-      } else {
-        res.send(result)
+      try{
+        var result = await connection2.execute(sqlCodeCopy);
+        if(el.JSON_CONFIG){
+          eval(el.JSON_CONFIG)
+        } else {
+          res.send(result)
+        }
+      } catch {
+        res.status(500).send("sql query is incorrect")
       }
     } else {
       var sqlString = eval('`'+el.SQL_CODE+'`')
@@ -404,21 +407,26 @@ async function forLoopClosure(lastMethodsVersions, indexM){
         })
         if(isErr) return
         eval(paramsStr)
-        console.log(el.SQL_CODE);
         var sqlCodeCopy = el.SQL_CODE
         if(sqlCodeCopy.includes("<if testParameter=")){
           var sqlCopyStr = parseSql(sqlCodeCopy,paramsArr,parMap)
           sqlCodeCopy = eval('`'+sqlCopyStr+'`')
         }
         var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
-        
-        var result = await connection2.execute(sqlCodeCopy);
-        await connection2.close();
-        if(el.JSON_CONFIG){
-          eval(el.JSON_CONFIG)
-        } else {
-          res.send(result)
+        try{
+          var result = await connection2.execute(sqlCodeCopy);
+          if(el.JSON_CONFIG){
+            eval(el.JSON_CONFIG)
+          } else {
+            res.send(result)
+          }
+        } catch {
+          res.status(500).send("sql query is incorrect")
         }
+        finally {
+          await connection2.close();
+        }
+
       } else {
         var sqlString = eval('`'+el.SQL_CODE+'`')
         var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
@@ -433,10 +441,5 @@ async function forLoopClosure(lastMethodsVersions, indexM){
     })
 }
 
-
-
-// part = sql[index].split("</if>")
-// part = part[0].split("\">", 1)
-// console.log(part,"|||");
 //http://localhost:8080/makeHttpListeners?methodId=27
 //http://localhost:8080/endpoint1/12?name=h

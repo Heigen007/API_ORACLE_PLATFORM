@@ -59,8 +59,9 @@
                             You can: create new service, create new version or update the version of the service, that already exists.<br>
                             To create new version or update the version of the service, that already exists you need to choose the version from the table by clicking on it.<br>
                             Then you should write down 3 parameters:<br>
-                            <strong>Version name</strong>(version from 10th of August) - the name of the version(you can see it in the second column of the table)
-                            <strong>Endpoint</strong>(someEndpoint/someApi/andSoOn) - you <strong>should not</strong> put <code>'/'</code> at the beginning of the Endpoint<br>
+                            <strong>Version name</strong>(version from 10th of August) - the name of the version(you can see it in the second column of the table).<br>
+                            <strong>Description</strong>(some Text) - discription of the version(optional).<br>
+                            <strong>Endpoint</strong>(someEndpoint/someApi/andSoOn) - you <strong>should not</strong> put <code>'/'</code> at the beginning of the Endpoint.<br>
                             <strong>Is enabled</strong>(true/false) - you can define the status of the service. If false, service does not work.
                         </div>
                     </div>
@@ -138,7 +139,7 @@
                     </h2>
                     <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#accordionExample">
                         <div class="accordion-body">
-                            <strong>Final JSON format.</strong> This is the last part of your service code. In the example code you will see some code, but all you nee to know is that the result. that Database returns you can find in <code>result</code><br>
+                            <strong>Final JSON format(optional).</strong> This is the last part of your service code. In the example code you will see some code, but all you nee to know is that the result. that Database returns you can find in <code>result</code><br>
                             And to send some response back on http request you should use <code>res.status(httpCode(optional - 200 by default)).send(somethingHere)</code><br>
                             Database returns object, where all object properties has UPCASE. So you need to write down some manipulations and create your own structure.<br>
                             <strong>EXAMPLE</strong><br>
@@ -191,7 +192,8 @@
                             QUEUE_MAX: 500,
                             QUEUE_TIMEOUT: 60000
                         },
-                        JSON_CONFIG: ""
+                        JSON_CONFIG: "",
+                        DESCRIPTION: ""
                     },
                     selectedObject: {}
                 }
@@ -242,6 +244,10 @@
                 <div class="inputDiv">
                     <div class="label">Version name: </div>
                     <input class="input" type="text" v-model="info.VERSION_NAME">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">Description: </div>
+                    <textarea v-model="info.DESCRIPTION"></textarea>
                 </div>
                 <div class="inputDiv">
                     <div class="label">Endpoint: </div>
@@ -360,7 +366,8 @@
                             QUEUE_MAX: null,
                             QUEUE_TIMEOUT: null
                         },
-                        JSON_CONFIG: ""
+                        JSON_CONFIG: "",
+                        DESCRIPTION: ""
                     }
                 }
             },
@@ -468,6 +475,10 @@
                 <div class="inputDiv">
                     <div class="label">Version name: </div>
                     <input class="input" type="text" v-model="info.VERSION_NAME">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">Description: </div>
+                    <textarea v-model="info.DESCRIPTION"></textarea>
                 </div>
                 <div class="inputDiv">
                     <div class="label">Endpoint: </div>
@@ -587,7 +598,8 @@
                             QUEUE_MAX: null,
                             QUEUE_TIMEOUT: null
                         },
-                        JSON_CONFIG: ""
+                        JSON_CONFIG: "",
+                        DESCRIPTION: ""
                     }
                 }
             },
@@ -677,6 +689,10 @@
                 <div class="inputDiv">
                     <div class="label">Version name: </div>
                     <input class="input" type="text" v-model="info.VERSION_NAME">
+                </div>
+                <div class="inputDiv">
+                    <div class="label">Description: </div>
+                    <textarea v-model="info.DESCRIPTION"></textarea>
                 </div>
                 <div class="inputDiv">
                     <div class="label">Endpoint: </div>
