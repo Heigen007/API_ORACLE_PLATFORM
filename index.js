@@ -41,17 +41,23 @@ app.get('/', function(req, res) {
 });
 app.get('/getServices', async function(req, res) {
   var result = await getServices(oracledb)
-  if(result) return res.send(result.rows);
+  if(result) {
+    return res.send(result.rows);
+  }
   res.status(500).send('Error with getServices part')
 });
 app.post('/createService', async function(req, res) {
     var result = await createService(oracledb, req.body)
-    if(result) return res.send();
+    if(result) {
+      return res.send();
+    }
     res.status(500).send('Error with createService part')
 });
 app.post('/getServiceInfo', async function(req, res) {
   var result = await getServiceInfo(oracledb, req.body)
-  if(result) return res.send(result.rows[0]);
+  if(result) {
+    return res.send(result.rows[0]);
+  }
   res.status(500).send('Error with createService part')
 });
 app.post('/createNewVersion', async function(req, res) {
@@ -185,7 +191,9 @@ async function updateHttpListener(methodId){
           await connection2.close()
           if(el.JSON_CONFIG){
             eval(el.JSON_CONFIG)
+            createLog(el.ENDPOINT, 'Success', 'Response was returned successfully with custom json format')
           } else {
+            createLog(el.ENDPOINT, 'Success', 'Response was returned successfully(' + result.rows.length +' records)')
             return res.send(result)
           }
         } catch (err) {
@@ -205,8 +213,10 @@ async function updateHttpListener(methodId){
         await connection2.close();
         if(el.JSON_CONFIG){
           eval(el.JSON_CONFIG)
+          createLog(el.ENDPOINT, 'Success', 'Response was returned successfully with custom json format')
         } else {
-          res.send(result)
+          createLog(el.ENDPOINT, 'Success', 'Response was returned successfully(' + result.rows.length +' records)')
+          return res.send(result)
         }
       }
     })
@@ -463,7 +473,9 @@ async function forLoopClosure(lastMethodsVersions, indexM){
           await connection2.close()
           if(el.JSON_CONFIG){
             eval(el.JSON_CONFIG)
+            createLog(el.ENDPOINT, 'Success', 'Response was returned successfully with custom json format')
           } else {
+            createLog(el.ENDPOINT, 'Success', 'Response was returned successfully(' + result.rows.length +' records)')
             return res.send(result)
           }
         } catch (err){
@@ -484,8 +496,10 @@ async function forLoopClosure(lastMethodsVersions, indexM){
           await connection2.close();
           if(el.JSON_CONFIG){
             eval(el.JSON_CONFIG)
+            createLog(el.ENDPOINT, 'Success', 'Response was returned successfully with custom json format')
           } else {
-            res.send(result)
+            createLog(el.ENDPOINT, 'Success', 'Response was returned successfully(' + result.rows.length +' records)')
+            return res.send(result)
           }
         } catch (err){
           createLog(el.ENDPOINT, 'ERROR', err)
