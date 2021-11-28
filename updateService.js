@@ -1,4 +1,6 @@
-async function createService(oracledb, data) {
+const createLog = require("./createLog")
+
+async function updateVersion(oracledb, data) {
     try {
       var connection = await oracledb.getConnection();
 
@@ -19,13 +21,15 @@ async function createService(oracledb, data) {
       return 1
   
     } catch (err) {
-      console.log(err);
+      createLog('UPDATE_VERSION', 'ERROR', err)
       return 0
     } finally {
       if (connection) {
         await connection.close();
+      } else {
+        createLog('UPDATE_VERSION', 'ERROR', 'Connection doesn`t exist')
       }
     }
 }
 
-module.exports = createService
+module.exports = updateVersion

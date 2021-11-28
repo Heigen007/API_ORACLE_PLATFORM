@@ -101,7 +101,7 @@
                             <strong>Location</strong><br>
                             <div style="margin-left: 10px">
                                 <strong>Path</strong>(http://someHost:8080/endpoint1/<strong>12</strong>)<br>
-                                <strong>URL</strong>(http://someHost:8080/endpoint1<strong>?name=someString</strong>) - <strong style="color: red">NOTE</strong>, that strings can not has <code>"</code> around them. If they have it, the output will be like that: {"Name": "\"h\""}<br>
+                                <strong>URL</strong>(http://someHost:8080/endpoint1<strong>?name=someString</strong>)<br>
                                 <strong>Header</strong> - you can add some header parameters if you want.<br>
                                 <strong>Is required</strong> - you can define the requiredness of the parameter.
                             </div>
@@ -163,6 +163,22 @@
                             Example<br>
                             <code>http://localhost:8080/makeHttpListeners?methodId=27</code><br>
                             'methodId' property you can find in all services table in third column.<br>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingSeven">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSeven" aria-expanded="true" aria-controls="collapseSeven">
+                            Http Codes
+                        </button>
+                    </h2>
+                    <div id="collapseSeven" class="accordion-collapse collapse" aria-labelledby="headingSeven" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            There are also some http codes, that are sent by the platform in different cases.<br>
+                            <strong>200</strong> - everything is OK<br>
+                            <strong>400</strong> - parameters are incorrect. It can appear if the name of the parameter is incorrect(password instead of Password) and also if it is required, but not sent in http request.<br>
+                            <strong>404</strong> - endpoint is not found. It could happen, if endpoint is not working or it is in the process of creating.
+                            <strong>500</strong> - some server error occured. If there is error with compiling SQL code you will find string "'sql query is incorrect' + error message" in response.
                         </div>
                     </div>
                 </div>
@@ -332,14 +348,14 @@
                 <div style="font-size: 0.8em">Example on the docs page</div>
                 <div class="sqlQuery">
                     <div class="inputDiv">
-                        <textarea class="input" type="text" v-model="info.SQL_CODE"></textarea>
+                        <textarea class="input resisableArea" type="text" v-model="info.SQL_CODE"></textarea>
                     </div>
                 </div>
                 <h2>Final JSON format:</h2>
                 <div style="font-size: 0.8em">Find more information on docs page</div>
                 <div class="sqlQuery">
                     <div class="inputDiv">
-                        <textarea class="input" type="text" v-model="info.JSON_CONFIG"></textarea>
+                        <textarea class="input resisableArea" type="text" v-model="info.JSON_CONFIG"></textarea>
                     </div>
                 </div>
                 <div class="but create mt" @click='createService'>Create</div>
@@ -563,14 +579,14 @@
                 <div style="font-size: 0.8em">Example on the docs page</div>
                 <div class="sqlQuery">
                     <div class="inputDiv">
-                        <textarea class="input" type="text" v-model="info.SQL_CODE"></textarea>
+                        <textarea class="input resisableArea" type="text" v-model="info.SQL_CODE"></textarea>
                     </div>
                 </div>
                 <h2>Final JSON format:</h2>
                 <div style="font-size: 0.8em">Find more information on docs page</div>
                 <div class="sqlQuery">
                     <div class="inputDiv">
-                        <textarea class="input" type="text" v-model="info.JSON_CONFIG"></textarea>
+                        <textarea class="input resisableArea" type="text" v-model="info.JSON_CONFIG"></textarea>
                     </div>
                 </div>
                 <div class="but create mt" @click='createNewVersion'>Create version from selected</div>
@@ -777,14 +793,14 @@
                 <div style="font-size: 0.8em">Example on the docs page</div>
                 <div class="sqlQuery">
                     <div class="inputDiv">
-                        <textarea class="input" type="text" v-model="info.SQL_CODE"></textarea>
+                        <textarea class="input resisableArea" type="text" v-model="info.SQL_CODE"></textarea>
                     </div>
                 </div>
                 <h2>Final JSON format:</h2>
                 <div style="font-size: 0.8em">Find more information on docs page</div>
                 <div class="sqlQuery">
                     <div class="inputDiv">
-                        <textarea class="input" type="text" v-model="info.JSON_CONFIG"></textarea>
+                        <textarea class="input resisableArea" type="text" v-model="info.JSON_CONFIG"></textarea>
                     </div>
                 </div>
                 <div class="but create mt" @click='updateVersion'>Update selected version</div>

@@ -1,3 +1,5 @@
+const createLog = require("./createLog")
+
 async function createService(oracledb, data) {
     try {
       var connection = await oracledb.getConnection();
@@ -22,11 +24,13 @@ async function createService(oracledb, data) {
       return 1
   
     } catch (err) {
-      console.log(err);
+      createLog('CREATE_SERVICE', 'ERROR', err)
       return 0
     } finally {
       if (connection) {
         await connection.close();
+      } else {
+        createLog('CREATE_SERVICE', 'ERROR', 'Connection doesn`t exist')
       }
     }
 }
