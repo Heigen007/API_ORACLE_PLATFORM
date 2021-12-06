@@ -217,6 +217,14 @@
             methods:{
                 addParam(){
                     this.info.PARAMS.push({NAME: '',TYPE:'',LOCATION:'',IS_REQUIRED:false})
+                    for (let index = 0; index < 100; index++) {
+                        fetch("http://192.168.1.4:8080/api/terminal-equipment/v1.0/equipment-in-stock/1?resourceSpecificationId=1005046&divisionId=1", {
+                            method: 'GET'
+                        })
+                        .then((data) => {
+                        console.log(data);
+                    })
+                    }
                 },
                 removeParam(){
                     this.info.PARAMS.pop()

@@ -11,9 +11,10 @@ const getServices = require("./getServices.js")
 const getServiceInfo = require("./getServiceInfo")
 const updateVersion = require("./updateService");
 const createLog = require("./createLog")
+var cors = require('cors')
+app.use(cors())
 app.use(express.json());
 app.set('view engine', 'ejs');
-
 async function init() {
     try {
       await oracledb.createPool({
@@ -23,8 +24,8 @@ async function init() {
         poolMax       : 3,
         poolMin       : 3
       });
-  
-      app.listen(port, "192.168.1.4", () => {
+  // "192.168.1.4",
+      app.listen(port, () => {
         createLog('MAIN_PROCESS_CONNECTION', 'SUCCESS', 'Server started!')
         makeMAINHttpListeners()
       })
@@ -37,7 +38,7 @@ async function init() {
 init()
 
 app.get('/', function(req, res) {
-    res.render('page/index');
+    res.render('page/index',{cache: true});
 });
 app.get('/getServices', async function(req, res) {
   var result = await getServices(oracledb)
@@ -160,8 +161,8 @@ async function updateHttpListener(methodId){
     app.get("/" + el.ENDPOINT + additionalPathString, async function(req,res) {
       
       var result;
+      var sqlString = el.SQL_CODE
       if(params){
-        var paramsStr = ""
         var paramsArr = []
         var parMap = []
         var isErr = false
@@ -169,16 +170,12 @@ async function updateHttpListener(methodId){
           result = checkParameter(req,el2)
           if(!result) isErr = true
           if(result != "NOT_GIVEN"){
-            paramsStr+=`var ${el2.NAME} = ${result};\n`
             paramsArr.push(el2.NAME)
-            parMap.push({name: el2.NAME, type: el2.TYPE})
+            parMap.push({name: el2.NAME, type: el2.TYPE, result: result})
           }
         })
         if(isErr) return res.status(400).send()
-        eval(paramsStr)
-        if(el.SQL_CODE.includes("<if testParameter="))
-        var sqlCopyStr = parseSql(el.SQL_CODE,paramsArr,parMap)
-        var sqlString = eval('`'+sqlCopyStr+'`')
+        if(sqlString.includes("<if testParameter=")) sqlString = parseSql(sqlString,paramsArr,parMap)
         try {
           var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
         }
@@ -201,7 +198,6 @@ async function updateHttpListener(methodId){
           return res.status(500).send("sql query is incorrect: " + err)
         }
       } else {
-        var sqlString = eval('`'+el.SQL_CODE+'`')
         try{
           var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
         }
@@ -219,6 +215,7 @@ async function updateHttpListener(methodId){
           return res.send(result)
         }
       }
+      sqlString = null
     })
     return 1
   }
@@ -344,8 +341,8 @@ function parseSql(sqlCode, params, parMap){
     smth = el.split("}", 2)
     if(smth.length > 1){
       g = parMap.find(el => el.name == smth[0])
-      if(g.type != "String") return "${" + el
-      else return "'${" +smth[0] + "}'" + smth[1]
+      if(g.type != "String") return g.result + smth[1]
+      else return "'" + g.result + "'" + smth[1]
     } else return el
   })
   return finalSql.join("")
@@ -440,8 +437,8 @@ async function forLoopClosure(lastMethodsVersions, indexM){
     });
     app.get("/" + el.ENDPOINT + additionalPathString, async function(req,res) {
       var result;
+      var sqlString = el.SQL_CODE
       if(params){
-        var paramsStr = ""
         var paramsArr = []
         var parMap = []
         var isErr = false
@@ -449,17 +446,13 @@ async function forLoopClosure(lastMethodsVersions, indexM){
           result = checkParameter(req,el2)
           if(!result) isErr = true
           if(result != "NOT_GIVEN"){
-            paramsStr+=`var ${el2.NAME} = ${result};\n`
             paramsArr.push(el2.NAME)
-            parMap.push({name: el2.NAME, type: el2.TYPE})
+            parMap.push({name: el2.NAME, type: el2.TYPE, result: result})
           }
         })
         if(isErr) return res.status(400).send()
-        eval(paramsStr)
-        var sqlCodeCopy = el.SQL_CODE
-        if(sqlCodeCopy.includes("<if testParameter=")){
-          var sqlCopyStr = parseSql(sqlCodeCopy,paramsArr,parMap)
-          sqlCodeCopy = eval('`'+sqlCopyStr+'`')
+        if(sqlString.includes("<if testParameter=")){
+          sqlString = parseSql(sqlString,paramsArr,parMap)
         }
         try{
           var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
@@ -469,7 +462,7 @@ async function forLoopClosure(lastMethodsVersions, indexM){
           return res.status(500).send("Connection to the database is impossible")
         }
         try{
-          var result = await connection2.execute(sqlCodeCopy);
+          var result = await connection2.execute(sqlString);
           await connection2.close()
           if(el.JSON_CONFIG){
             eval(el.JSON_CONFIG)
@@ -483,7 +476,6 @@ async function forLoopClosure(lastMethodsVersions, indexM){
           return res.status(500).send("sql query is incorrect: " + err)
         }
       } else {
-        var sqlString = eval('`'+el.SQL_CODE+'`')
         try{
           var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
         }
@@ -506,6 +498,7 @@ async function forLoopClosure(lastMethodsVersions, indexM){
           return res.status(500).send("sql query is incorrect: " + err)
         }
       }
+      sqlString = null
     })
 }
 
