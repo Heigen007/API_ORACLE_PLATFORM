@@ -18,11 +18,11 @@ async function updateVersion(oracledb, data) {
       else await connection.execute(`UPDATE REST_WEB_METHODS_SQL SET SQL_CODE = '${data.SQL_CODE}' WHERE ID = ${data.SQLID}`);
       
       connection.commit();
-      return 1
+      return [1,1]
   
     } catch (err) {
       createLog('UPDATE_VERSION', 'ERROR', err)
-      return 0
+      return [0,err]
     } finally {
       if (connection) {
         await connection.close();

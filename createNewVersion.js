@@ -20,11 +20,11 @@ async function createNewVersion(oracledb, data) {
       await connection.execute(`INSERT INTO REST_WEB_METHODS_SQL VALUES (${sqlId}, ${methodId}, ${methodVersionId}, '${data.SQL_CODE}'${data.JSON_CONFIG ? ",'" + data.JSON_CONFIG + "'" : ""})`);
       
       connection.commit();
-      return 1
+      return [1,1]
   
     } catch (err) {
       createLog('CREATE_NEW_VERSION', 'ERROR', err)
-      return 0
+      return [0,err]
     } finally {
       if (connection) {
         await connection.close();

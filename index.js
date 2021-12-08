@@ -1,10 +1,11 @@
 var express = require('express');
 var app = express();
+var compression = require('compression')
 const oracledb = require('oracledb');
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT
 oracledb.fetchAsString = [ oracledb.CLOB ];
 const mypw = "(DESCRIPTION =(ADDRESS_LIST =(LOAD_BALANCE = yes)(FAILOVER = on)(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.155)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.154)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.153)(PORT = 1521)))(CONNECT_DATA =(SERVER = DEDICATED)(SERVICE_NAME = ars)(FAILOVER_MODE =(TYPE = SELECT)(METHOD = BASIC)(RETRIES = 5)(DELAY = 15))))"
-const port = 8080
+const port = 3000
 const createService = require("./createService")
 const createNewVersion = require("./createNewVersion")
 const getServices = require("./getServices.js")
@@ -15,6 +16,8 @@ var cors = require('cors')
 app.use(cors())
 app.use(express.json());
 app.set('view engine', 'ejs');
+app.set('view cache', true);
+app.use(compression())
 async function init() {
     try {
       await oracledb.createPool({
@@ -38,7 +41,7 @@ async function init() {
 init()
 
 app.get('/', function(req, res) {
-    res.render('page/index',{cache: true});
+  res.render('page/index');
 });
 app.get('/getServices', async function(req, res) {
   var result = await getServices(oracledb)
@@ -49,34 +52,56 @@ app.get('/getServices', async function(req, res) {
 });
 app.post('/createService', async function(req, res) {
     var result = await createService(oracledb, req.body)
-    if(result) {
+    if(result[0]) {
+      createLog('createService(' + req.body.VERSION_NAME + ')', 'SUCCESS', 'Service and version have been created')
       return res.send();
     }
-    res.status(500).send('Error with createService part')
+    res.status(500).send('Error with createService part(' + result[1] + ')')
+    createLog('getServiceInfo', 'ERROR', 'Error with createService part')
+
 });
 app.post('/getServiceInfo', async function(req, res) {
   var result = await getServiceInfo(oracledb, req.body)
-  if(result) {
-    return res.send(result.rows[0]);
+  if(result[0]) {
+    return res.send(result[1].rows[0]);
   }
-  res.status(500).send('Error with createService part')
+  res.status(500).send('Error with createService part(' + result[1] + ')')
+  createLog('getServiceInfo', 'ERROR', 'Error with getServiceInfo')
 });
 app.post('/createNewVersion', async function(req, res) {
   var result = await createNewVersion(oracledb, req.body)
-  if(result) return res.send();
-  res.status(500).send('Error with createNewVersion part')
+  if(result[0]) {
+    createLog('updateVersion(' + req.body.VERSION_NAME + ')', 'SUCCESS', 'Version has been created')
+    return res.send();
+  }
+  res.status(500).send('Error with createNewVersion part(' + result[1] + ')')
+  createLog('updateVersion(' + req.body.VERSION_NAME + ')', 'ERROR', 'Error with createNewVersion part')
 });
 app.post('/updateVersion', async function(req, res) {
   var result = await updateVersion(oracledb, req.body)
-  if(result) return res.send();
-  res.status(500).send('Error with updateVersion part')
+  if(result[0]) {
+    createLog('updateVersion(' + req.body.VERSION_NAME + ')', 'SUCCESS', 'Version has been updated')
+    return res.send();
+  }
+  res.status(500).send('Error with updateVersion part(' + result[1] + ')')
+  createLog('updateVersion(' + req.body.VERSION_NAME + ')', 'ERROR', 'Error with updateVersion part')
 });
 app.get('/updateHttpListener', async function(req, res) {
-  if(!req.query.methodId) return res.sendStatus(400)
+  if(!req.query.methodId) {
+    createLog('updateHttpListener', 'ERROR', 'methodId has not been sent')
+    return res.sendStatus(400)
+  }
   var result = await updateHttpListener(req.query.methodId)
-  if(result && result == "methodId") return res.sendStatus(400)
-  if(result) return res.send()
-  res.status(500).send("Connection to the database is impossible.")
+  if(result && result == "methodId") {
+    createLog('updateHttpListener', 'ERROR', 'methodId(' + req.query.methodId + ') is incorrect')
+    return res.sendStatus(400)
+  }
+  if(result) {
+    createLog('updateHttpListener', 'SUCCESS', 'methodId(' + req.query.methodId + ') has been updated')
+    return res.send()
+  }
+  res.status(500).send("Connection to the database is impossible")
+  createLog('updateHttpListener', 'ERROR', 'Connection to the database is impossible')
 });
 
 async function updateHttpListener(methodId){
@@ -165,16 +190,16 @@ async function updateHttpListener(methodId){
       if(params){
         var paramsArr = []
         var parMap = []
-        var isErr = false
+        var isErr = [0,0]
         params.forEach(el2 => {
           result = checkParameter(req,el2)
-          if(!result) isErr = true
-          if(result != "NOT_GIVEN"){
+          if(!result[0]) {isErr[1] = result[1]; return isErr[0] = 1}
+          if(result[1] != "NOT_GIVEN"){
             paramsArr.push(el2.NAME)
-            parMap.push({name: el2.NAME, type: el2.TYPE, result: result})
+            parMap.push({name: el2.NAME, type: el2.TYPE, result: result[1]})
           }
         })
-        if(isErr) return res.status(400).send()
+        if(isErr[0]) return res.status(400).send(isErr[1])
         if(sqlString.includes("<if testParameter=")) sqlString = parseSql(sqlString,paramsArr,parMap)
         try {
           var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
@@ -253,21 +278,21 @@ function checkParameter(req,el) {
     } else if(el.LOCATION == 'Path'){
       param = req.params[el.NAME]
     }
-    if(el.IS_REQUIRED && !param) return false
-    if(!param) return "NOT_GIVEN"
+    if(el.IS_REQUIRED && !param) return [0, el.NAME + ' is required']
+    if(!param) return [1,"NOT_GIVEN"]
     if(el.TYPE == "Integer"){
-      if(!Number(param) || param?.includes('e') || param.length > 20 || param.includes('.')) return false
-      return param
+      if(!Number(param) || param?.includes('e') || param.length > 20 || param.includes('.')) return [0,el.NAME + ' should have INTEGER type']
+      return [1,param]
     }
     if(el.TYPE == "Number"){
-      if(!Number(param) || param?.includes('e') || param.length > 20) return false
-      return param
+      if(!Number(param) || param?.includes('e') || param.length > 20) return [0,el.NAME + ' should have NUMBER type']
+      return [1,param]
     }
-    return "'" + param + "'"
+    return [1,"'" + param + "'"]
   }
   catch (err) {
     createLog('CHECK_PARAMETER', 'ERROR', err)
-    return 0
+    return [0]
   }
 }
 
@@ -441,16 +466,16 @@ async function forLoopClosure(lastMethodsVersions, indexM){
       if(params){
         var paramsArr = []
         var parMap = []
-        var isErr = false
+        var isErr = [0,0]
         params.forEach(el2 => {
           result = checkParameter(req,el2)
-          if(!result) isErr = true
-          if(result != "NOT_GIVEN"){
+          if(!result[0]) {isErr[1] = result[1]; return isErr[0] = 1}
+          if(result[1] != "NOT_GIVEN"){
             paramsArr.push(el2.NAME)
-            parMap.push({name: el2.NAME, type: el2.TYPE, result: result})
+            parMap.push({name: el2.NAME, type: el2.TYPE, result: result[1]})
           }
         })
-        if(isErr) return res.status(400).send()
+        if(isErr[0]) return res.status(400).send(isErr[1])
         if(sqlString.includes("<if testParameter=")){
           sqlString = parseSql(sqlString,paramsArr,parMap)
         }

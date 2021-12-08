@@ -21,11 +21,11 @@ async function createService(oracledb, data) {
       else await connection.execute(`INSERT INTO REST_WEB_METHODS_SQL (ID, METHOD_ID, VERSION_ID, SQL_CODE) VALUES (${sqlId}, ${methodId}, ${methodVersionId}, '${data.SQL_CODE}')`);
       
       connection.commit();
-      return 1
+      return [1,1]
   
     } catch (err) {
       createLog('CREATE_SERVICE', 'ERROR', err)
-      return 0
+      return [0,err]
     } finally {
       if (connection) {
         await connection.close();

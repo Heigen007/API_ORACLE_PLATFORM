@@ -62,11 +62,11 @@ async function createService(oracledb, data) {
           rwmv.ID = '${data.VERSION_ID}'
       `);
       result.rows[0].PARAMS = params.rows
-      return result
+      return [1,result]
     }
     catch (err) {
       createLog('GET_SERVICE_INFO', 'ERROR', err)
-      return 0
+      return [0,err]
     }
     finally {
       if (connection) {
