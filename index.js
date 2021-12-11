@@ -1,9 +1,9 @@
 var express = require('express');
 var app = express();
 var compression = require('compression')
+var cors = require('cors');
+
 const oracledb = require('oracledb');
-oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT
-oracledb.fetchAsString = [ oracledb.CLOB ];
 const mypw = "(DESCRIPTION =(ADDRESS_LIST =(LOAD_BALANCE = yes)(FAILOVER = on)(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.155)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.154)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.153)(PORT = 1521)))(CONNECT_DATA =(SERVER = DEDICATED)(SERVICE_NAME = ars)(FAILOVER_MODE =(TYPE = SELECT)(METHOD = BASIC)(RETRIES = 5)(DELAY = 15))))"
 const port = 3000
 const createService = require("./createService")
@@ -12,12 +12,20 @@ const getServices = require("./getServices.js")
 const getServiceInfo = require("./getServiceInfo")
 const updateVersion = require("./updateService");
 const createLog = require("./createLog")
-var cors = require('cors')
-app.use(cors())
-app.use(express.json());
+const checkParameter = require("./checkParameter")
+const findAdditionalPathString = require("./findAdditionalPathString")
+const createDBPool = require("./createDBPool");
+const parseSql = require("./parseSql")
+
+oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT
+oracledb.fetchAsString = [ oracledb.CLOB ];
+
 app.set('view engine', 'ejs');
 app.set('view cache', true);
 app.use(compression())
+app.use(cors())
+app.use(express.json());
+
 async function init() {
     try {
       await oracledb.createPool({
@@ -27,9 +35,9 @@ async function init() {
         poolMax       : 3,
         poolMin       : 3
       });
-  // "192.168.1.4",
-      app.listen(port, () => {
-        createLog('MAIN_PROCESS_CONNECTION', 'SUCCESS', 'Server started!')
+      // "app.listen(port, "127.0.0.1", () => {",
+      app.listen(port, "127.0.0.1", () => {
+        createLog('MAIN_PROCESS_CONNECTION', 'SUCCESS', 'Server started')
         makeMAINHttpListeners()
       })
   
@@ -45,20 +53,18 @@ app.get('/', function(req, res) {
 });
 app.get('/getServices', async function(req, res) {
   var result = await getServices(oracledb)
-  if(result) {
-    return res.send(result.rows);
-  }
+  if(result) return res.send(result.rows);
+  createLog('getServices', 'ERROR', 'Error with getServices part')
   res.status(500).send('Error with getServices part')
 });
 app.post('/createService', async function(req, res) {
-    var result = await createService(oracledb, req.body)
-    if(result[0]) {
-      createLog('createService(' + req.body.VERSION_NAME + ')', 'SUCCESS', 'Service and version have been created')
-      return res.send();
-    }
-    res.status(500).send('Error with createService part(' + result[1] + ')')
-    createLog('getServiceInfo', 'ERROR', 'Error with createService part')
-
+  var result = await createService(oracledb, req.body)
+  if(result[0]) {
+    createLog('createService(' + req.body.VERSION_NAME + ')', 'SUCCESS', 'Service and version have been created')
+    return res.send();
+  }
+  res.status(500).send('Error with createService part(' + result[1] + ')')
+  createLog('getServiceInfo', 'ERROR', 'Error with createService part(' + result[1] + ')')
 });
 app.post('/getServiceInfo', async function(req, res) {
   var result = await getServiceInfo(oracledb, req.body)
@@ -66,7 +72,7 @@ app.post('/getServiceInfo', async function(req, res) {
     return res.send(result[1].rows[0]);
   }
   res.status(500).send('Error with createService part(' + result[1] + ')')
-  createLog('getServiceInfo', 'ERROR', 'Error with getServiceInfo')
+  createLog('getServiceInfo', 'ERROR', 'Error with createService part(' + result[1] + ')')
 });
 app.post('/createNewVersion', async function(req, res) {
   var result = await createNewVersion(oracledb, req.body)
@@ -75,7 +81,7 @@ app.post('/createNewVersion', async function(req, res) {
     return res.send();
   }
   res.status(500).send('Error with createNewVersion part(' + result[1] + ')')
-  createLog('updateVersion(' + req.body.VERSION_NAME + ')', 'ERROR', 'Error with createNewVersion part')
+  createLog('updateVersion(' + req.body.VERSION_NAME + ')', 'ERROR', 'Error with createNewVersion part(' + result[1] + ')')
 });
 app.post('/updateVersion', async function(req, res) {
   var result = await updateVersion(oracledb, req.body)
@@ -84,7 +90,7 @@ app.post('/updateVersion', async function(req, res) {
     return res.send();
   }
   res.status(500).send('Error with updateVersion part(' + result[1] + ')')
-  createLog('updateVersion(' + req.body.VERSION_NAME + ')', 'ERROR', 'Error with updateVersion part')
+  createLog('updateVersion(' + req.body.VERSION_NAME + ')', 'ERROR', 'Error with updateVersion part(' + result[1] + ')')
 });
 app.get('/updateHttpListener', async function(req, res) {
   if(!req.query.methodId) {
@@ -96,8 +102,12 @@ app.get('/updateHttpListener', async function(req, res) {
     createLog('updateHttpListener', 'ERROR', 'methodId(' + req.query.methodId + ') is incorrect')
     return res.sendStatus(400)
   }
+  if(result && result == "notEnabled") {
+    createLog('updateHttpListener', 'ERROR', 'method is not enabled')
+    return res.sendStatus(400)
+  }
   if(result) {
-    createLog('updateHttpListener', 'SUCCESS', 'methodId(' + req.query.methodId + ') has been updated')
+    createLog('updateHttpListener', 'SUCCESS', 'version with id = ' + req.query.methodId + ' has been updated')
     return res.send()
   }
   res.status(500).send("Connection to the database is impossible")
@@ -151,6 +161,7 @@ async function updateHttpListener(methodId){
     `)
     lastMethodsVersions = lastMethodsVersions.rows
     if(lastMethodsVersions.length == 0) return "methodId"
+    if(!lastMethodsVersions[0].IS_ENABLED) return "notEnabled"
     var el = lastMethodsVersions[0]
     el.SQL_CODE = el.SQL_CODE.replace(/"/g, "'");
     var params = await connection.execute(`
@@ -176,13 +187,13 @@ async function updateHttpListener(methodId){
         rwmv.ID = '${el.VERSION_ID}'
     `)
     params = params.rows
-    var poolRes = await createDBPool(el)
+    var poolRes = await createDBPool(oracledb,el)
     if(!poolRes) return false
     var additionalPathString = findAdditionalPathString(params)
     app._router.stack = app._router.stack.filter(el2 => {
-      return el2.route?.path != `/${el.ENDPOINT}${additionalPathString}`
+      return !el2.route?.path.includes(`/${el.ENDPOINT}`)
     });
-    if(!lastMethodsVersions[0].IS_ENABLED) return 1
+    console.log("/" + el.ENDPOINT + additionalPathString);
     app.get("/" + el.ENDPOINT + additionalPathString, async function(req,res) {
       
       var result;
@@ -205,7 +216,7 @@ async function updateHttpListener(methodId){
           var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
         }
         catch (err) {
-          createLog(el.ENDPOINT, 'ERROR', err)
+          createLog(req.originalUrl, 'ERROR', err, req.headers.host)
           return res.status(500).send("Connection to the database is impossible")
         }
         try{
@@ -213,30 +224,30 @@ async function updateHttpListener(methodId){
           await connection2.close()
           if(el.JSON_CONFIG){
             eval(el.JSON_CONFIG)
-            createLog(el.ENDPOINT, 'Success', 'Response was returned successfully with custom json format')
+            createLog(req.originalUrl, 'Success', 'Response was returned successfully with custom json format', req.headers.host)
           } else {
-            createLog(el.ENDPOINT, 'Success', 'Response was returned successfully(' + result.rows.length +' records)')
+            createLog(req.originalUrl, 'Success', 'Response was returned successfully(' + result.rows.length +' records)', req.headers.host)
             return res.send(result)
           }
         } catch (err) {
-          createLog(el.ENDPOINT, 'ERROR', err)
+          createLog(req.originalUrl, 'ERROR', err)
           return res.status(500).send("sql query is incorrect: " + err)
         }
       } else {
-        try{
+        try {
           var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
         }
         catch (err) {
-          createLog(el.ENDPOINT, 'ERROR', err)
+          createLog(req.originalUrl, 'ERROR', err, req.headers.host)
           return res.status(500).send("Connection to the database is impossible")
         }
         var result = await connection2.execute(sqlString);
         await connection2.close();
-        if(el.JSON_CONFIG){
+        if(el.JSON_CONFIG) {
           eval(el.JSON_CONFIG)
-          createLog(el.ENDPOINT, 'Success', 'Response was returned successfully with custom json format')
+          createLog(req.originalUrl, 'Success', 'Response was returned successfully with custom json format', req.headers.host)
         } else {
-          createLog(el.ENDPOINT, 'Success', 'Response was returned successfully(' + result.rows.length +' records)')
+          createLog(req.originalUrl, 'Success', 'Response was returned successfully(' + result.rows.length +' records)', req.headers.host)
           return res.send(result)
         }
       }
@@ -256,123 +267,6 @@ async function updateHttpListener(methodId){
     }
   }
 }
-
-function findAdditionalPathString(params) {
-  var string = ""
-  if(!params) return string
-  params.forEach(el => {
-    if(el.LOCATION == 'Path'){
-      string += "/:"+el.NAME
-    }
-  })
-  return string
-}
-
-function checkParameter(req,el) {
-  try {
-    var param;
-    if(el.LOCATION == 'URL'){
-      param = req.query[el.NAME]
-    } else if(el.LOCATION == 'Header'){
-      param = req.headers[el.NAME.toLowerCase()]
-    } else if(el.LOCATION == 'Path'){
-      param = req.params[el.NAME]
-    }
-    if(el.IS_REQUIRED && !param) return [0, el.NAME + ' is required']
-    if(!param) return [1,"NOT_GIVEN"]
-    if(el.TYPE == "Integer"){
-      if(!Number(param) || param?.includes('e') || param.length > 20 || param.includes('.')) return [0,el.NAME + ' should have INTEGER type']
-      return [1,param]
-    }
-    if(el.TYPE == "Number"){
-      if(!Number(param) || param?.includes('e') || param.length > 20) return [0,el.NAME + ' should have NUMBER type']
-      return [1,param]
-    }
-    return [1,"'" + param + "'"]
-  }
-  catch (err) {
-    createLog('CHECK_PARAMETER', 'ERROR', err)
-    return [0]
-  }
-}
-
-async function createDBPool(el){
-  try{
-    try{
-      var closingPool = await oracledb.getPool("endpoint" + el.ENDPOINT)
-      if(closingPool) {
-        await closingPool.reconfigure({
-          user            : el.POOL_USER,
-          password        : el.POOL_PASSWORD,
-          connectString   : el.CONNECT_STRING,
-          poolMax         : el.POOL_MAX,
-          poolMin         : el.POOL_MIN,
-          poolTimeout     : el.POOL_TIMEOUT,
-          poolPingInterval: el.POOL_PING_INTERVAL,
-          queueMax        : el.QUEUE_MAX,
-          queueTimeout    : el.QUEUE_TIMEOUT,
-          poolAlias       : "endpoint" + el.ENDPOINT
-        });
-      }
-      return true
-    }
-    catch{
-      await oracledb.createPool({
-        user            : el.POOL_USER,
-        password        : el.POOL_PASSWORD,
-        connectString   : el.CONNECT_STRING,
-        poolMax         : el.POOL_MAX,
-        poolMin         : el.POOL_MIN,
-        poolTimeout     : el.POOL_TIMEOUT,
-        poolPingInterval: el.POOL_PING_INTERVAL,
-        queueMax        : el.QUEUE_MAX,
-        queueTimeout    : el.QUEUE_TIMEOUT,
-        poolAlias       : "endpoint" + el.ENDPOINT
-      });
-      return true
-    }
-  }
-  catch (err){
-    createLog('CREATE_DB_POOL', 'ERROR', err)
-    return false
-  }
-  
-}
-
-function parseSql(sqlCode, params, parMap){
-  var par
-  var smth
-  var finalSql = ""
-  var sql = sqlCode
-  const separators = ['<if', '</if>']
-  const paramSeparators = ['testParameter=\'', '\'>']
-  
-  const result = sql.split(new RegExp(separators.join('|'), 'g'));
-  for(let i = 0; i < result.length; i++){
-    if(!result[i].includes('testParameter')) finalSql += result[i]
-    else{
-      par = result[i].split(new RegExp(paramSeparators.join('|'), 'g'));
-
-      for (let index = 0; index < params.length; index++) {
-        if(params[index] == par[1]) {
-          finalSql += par[2]
-        }
-      }
-    }
-  }
-  finalSql = finalSql.split("${")
-  var g
-  finalSql = finalSql.map(el => {
-    smth = el.split("}", 2)
-    if(smth.length > 1){
-      g = parMap.find(el => el.name == smth[0])
-      if(g.type != "String") return g.result + smth[1]
-      else return "'" + g.result + "'" + smth[1]
-    } else return el
-  })
-  return finalSql.join("")
-}
-
 
 async function makeMAINHttpListeners(){
   var connectionM = await oracledb.getConnection();
@@ -419,7 +313,7 @@ async function makeMAINHttpListeners(){
   await connectionM.close();
   lastMethodsVersions = lastMethodsVersions.rows
   if(lastMethodsVersions.length == 0) return
-  for(let indexM = 0; indexM < lastMethodsVersions.length; indexM ++){
+  for(let indexM = 0; indexM < lastMethodsVersions.length; indexM ++) {
     await forLoopClosure(lastMethodsVersions, indexM)
   }
   return true
@@ -454,11 +348,11 @@ async function forLoopClosure(lastMethodsVersions, indexM){
     `)
     await connection.close()
     params = params.rows
-    var poolRes = await createDBPool(el)
+    var poolRes = await createDBPool(oracledb,el)
     if(!poolRes) return false
     var additionalPathString = findAdditionalPathString(params)
     app._router.stack = app._router.stack.filter(el2 => {
-      return el2.route?.path != `/${el.ENDPOINT}${additionalPathString}`
+      return !el2.route?.path.includes(`/${el.ENDPOINT}`)
     });
     app.get("/" + el.ENDPOINT + additionalPathString, async function(req,res) {
       var result;
@@ -476,50 +370,50 @@ async function forLoopClosure(lastMethodsVersions, indexM){
           }
         })
         if(isErr[0]) return res.status(400).send(isErr[1])
-        if(sqlString.includes("<if testParameter=")){
+        if(sqlString.includes("<if testParameter=")) {
           sqlString = parseSql(sqlString,paramsArr,parMap)
         }
-        try{
+        try {
           var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
         }
         catch (err) {
-          createLog(el.ENDPOINT, 'ERROR', err)
+          createLog(req.originalUrl, 'ERROR', err, req.headers.host)
           return res.status(500).send("Connection to the database is impossible")
         }
         try{
           var result = await connection2.execute(sqlString);
           await connection2.close()
-          if(el.JSON_CONFIG){
+          if(el.JSON_CONFIG) {
             eval(el.JSON_CONFIG)
-            createLog(el.ENDPOINT, 'Success', 'Response was returned successfully with custom json format')
+            createLog(req.originalUrl, 'Success', 'Response was returned successfully with custom json format',req.headers.host)
           } else {
-            createLog(el.ENDPOINT, 'Success', 'Response was returned successfully(' + result.rows.length +' records)')
+            createLog(req.originalUrl, 'Success', 'Response was returned successfully(' + result.rows.length +' records)',req.headers.host)
             return res.send(result)
           }
-        } catch (err){
-          createLog(el.ENDPOINT, 'ERROR', err)
+        } catch (err) {
+          createLog(req.originalUrl, 'ERROR', err,req. headers.host)
           return res.status(500).send("sql query is incorrect: " + err)
         }
       } else {
-        try{
+        try {
           var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
         }
         catch (err) {
-          createLog(el.ENDPOINT, 'ERROR', err)
+          createLog(req.originalUrl, 'ERROR', err, req.headers.host)
           return res.status(500).send("Connection to the database is impossible")
         }
         try{
           var result = await connection2.execute(sqlString);
           await connection2.close();
-          if(el.JSON_CONFIG){
+          if(el.JSON_CONFIG) {
             eval(el.JSON_CONFIG)
-            createLog(el.ENDPOINT, 'Success', 'Response was returned successfully with custom json format')
+            createLog(req.originalUrl, 'Success', 'Response was returned successfully with custom json format', req.headers.host)
           } else {
-            createLog(el.ENDPOINT, 'Success', 'Response was returned successfully(' + result.rows.length +' records)')
+            createLog(req.originalUrl, 'Success', 'Response was returned successfully(' + result.rows.length +' records)', req.headers.host)
             return res.send(result)
           }
-        } catch (err){
-          createLog(el.ENDPOINT, 'ERROR', err)
+        } catch (err) {
+          createLog(req.originalUrl, 'ERROR', err, req.headers.host)
           return res.status(500).send("sql query is incorrect: " + err)
         }
       }

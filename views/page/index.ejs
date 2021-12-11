@@ -11,12 +11,12 @@
             <div class="but grey" style="margin-left: 5px;" v-bind:class="{ chosenGrey: chosenMainPage == 'docs'}" @click='chosenMainPage = "docs"'>Docs</div>
         </div>
         <div class = "settings" v-if="chosenMainPage == 'settings'">
-            <div class="security" v-if='isModal'>
+            <div v-on:keyup.enter="checkPassword" class="security" v-if='isModal'>
                 <div>
                     <div>Введите пароль:</div>
                     <input type="password" v-model='password'>
                 </div> 
-                <button @click='checkPassword'>Проверить</button>
+                <button  @click='checkPassword'>Проверить</button>
             </div>
             <h1 v-if="!isModal">Settings</h1>
             <div v-if="!isModal" class="services">
