@@ -36,7 +36,7 @@ async function init() {
         poolMin       : 3
       });
       // "app.listen(port, "127.0.0.1", () => {",
-      app.listen(port, "127.0.0.1", () => {
+      app.listen(port, () => {
         createLog('MAIN_PROCESS_CONNECTION', 'SUCCESS', 'Server started')
         makeMAINHttpListeners()
       })
@@ -68,9 +68,7 @@ app.post('/createService', async function(req, res) {
 });
 app.post('/getServiceInfo', async function(req, res) {
   var result = await getServiceInfo(oracledb, req.body)
-  if(result[0]) {
-    return res.send(result[1].rows[0]);
-  }
+  if(result[0]) return res.send(result[1].rows[0]);
   res.status(500).send('Error with createService part(' + result[1] + ')')
   createLog('getServiceInfo', 'ERROR', 'Error with createService part(' + result[1] + ')')
 });
@@ -219,9 +217,14 @@ async function updateHttpListener(methodId){
           createLog(req.originalUrl, 'ERROR', err, req.headers.host)
           return res.status(500).send("Connection to the database is impossible")
         }
-        try{
+        try {
           var result = await connection2.execute(sqlString);
           await connection2.close()
+        } catch (err) {
+          createLog(req.originalUrl, 'ERROR', err)
+          return res.status(500).send("sql query is incorrect: " + err)
+        }
+        try{
           if(el.JSON_CONFIG){
             eval(el.JSON_CONFIG)
             createLog(req.originalUrl, 'Success', 'Response was returned successfully with custom json format', req.headers.host)
@@ -231,7 +234,7 @@ async function updateHttpListener(methodId){
           }
         } catch (err) {
           createLog(req.originalUrl, 'ERROR', err)
-          return res.status(500).send("sql query is incorrect: " + err)
+          return res.status(500).send("JSON code is incorrect: " + err)
         }
       } else {
         try {
@@ -241,14 +244,24 @@ async function updateHttpListener(methodId){
           createLog(req.originalUrl, 'ERROR', err, req.headers.host)
           return res.status(500).send("Connection to the database is impossible")
         }
-        var result = await connection2.execute(sqlString);
-        await connection2.close();
-        if(el.JSON_CONFIG) {
-          eval(el.JSON_CONFIG)
-          createLog(req.originalUrl, 'Success', 'Response was returned successfully with custom json format', req.headers.host)
-        } else {
-          createLog(req.originalUrl, 'Success', 'Response was returned successfully(' + result.rows.length +' records)', req.headers.host)
-          return res.send(result)
+        try {
+          var result = await connection2.execute(sqlString);
+          await connection2.close()
+        } catch (err) {
+          createLog(req.originalUrl, 'ERROR', err)
+          return res.status(500).send("sql query is incorrect: " + err)
+        }
+        try{
+          if(el.JSON_CONFIG){
+            eval(el.JSON_CONFIG)
+            createLog(req.originalUrl, 'Success', 'Response was returned successfully with custom json format', req.headers.host)
+          } else {
+            createLog(req.originalUrl, 'Success', 'Response was returned successfully(' + result.rows.length +' records)', req.headers.host)
+            return res.send(result)
+          }
+        } catch (err) {
+          createLog(req.originalUrl, 'ERROR', err)
+          return res.status(500).send("JSON code is incorrect: " + err)
         }
       }
       sqlString = null
@@ -380,19 +393,24 @@ async function forLoopClosure(lastMethodsVersions, indexM){
           createLog(req.originalUrl, 'ERROR', err, req.headers.host)
           return res.status(500).send("Connection to the database is impossible")
         }
-        try{
+        try {
           var result = await connection2.execute(sqlString);
           await connection2.close()
-          if(el.JSON_CONFIG) {
+        } catch (err) {
+          createLog(req.originalUrl, 'ERROR', err)
+          return res.status(500).send("sql query is incorrect: " + err)
+        }
+        try{
+          if(el.JSON_CONFIG){
             eval(el.JSON_CONFIG)
-            createLog(req.originalUrl, 'Success', 'Response was returned successfully with custom json format',req.headers.host)
+            createLog(req.originalUrl, 'Success', 'Response was returned successfully with custom json format', req.headers.host)
           } else {
-            createLog(req.originalUrl, 'Success', 'Response was returned successfully(' + result.rows.length +' records)',req.headers.host)
+            createLog(req.originalUrl, 'Success', 'Response was returned successfully(' + result.rows.length +' records)', req.headers.host)
             return res.send(result)
           }
         } catch (err) {
-          createLog(req.originalUrl, 'ERROR', err,req. headers.host)
-          return res.status(500).send("sql query is incorrect: " + err)
+          createLog(req.originalUrl, 'ERROR', err)
+          return res.status(500).send("JSON code is incorrect: " + err)
         }
       } else {
         try {
@@ -402,10 +420,15 @@ async function forLoopClosure(lastMethodsVersions, indexM){
           createLog(req.originalUrl, 'ERROR', err, req.headers.host)
           return res.status(500).send("Connection to the database is impossible")
         }
-        try{
+        try {
           var result = await connection2.execute(sqlString);
-          await connection2.close();
-          if(el.JSON_CONFIG) {
+          await connection2.close()
+        } catch (err) {
+          createLog(req.originalUrl, 'ERROR', err)
+          return res.status(500).send("sql query is incorrect: " + err)
+        }
+        try{
+          if(el.JSON_CONFIG){
             eval(el.JSON_CONFIG)
             createLog(req.originalUrl, 'Success', 'Response was returned successfully with custom json format', req.headers.host)
           } else {
@@ -413,8 +436,8 @@ async function forLoopClosure(lastMethodsVersions, indexM){
             return res.send(result)
           }
         } catch (err) {
-          createLog(req.originalUrl, 'ERROR', err, req.headers.host)
-          return res.status(500).send("sql query is incorrect: " + err)
+          createLog(req.originalUrl, 'ERROR', err)
+          return res.status(500).send("JSON code is incorrect: " + err)
         }
       }
       sqlString = null

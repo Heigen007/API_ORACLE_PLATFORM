@@ -13,10 +13,10 @@
         <div class = "settings" v-if="chosenMainPage == 'settings'">
             <div v-on:keyup.enter="checkPassword" class="security" v-if='isModal'>
                 <div>
-                    <div>Введите пароль:</div>
-                    <input type="password" v-model='password'>
+                    <div style="color:white; margin-right: 10px">Введите пароль:</div>
+                    <input type="password" v-model='password' style="outline: none">
                 </div> 
-                <button  @click='checkPassword'>Проверить</button>
+                <button  @click='checkPassword' style="border: none">Проверить</button>
             </div>
             <h1 v-if="!isModal">Settings</h1>
             <div v-if="!isModal" class="services">
@@ -100,7 +100,7 @@
                             <strong>Type</strong> -  <strong>Integer</strong>(12), <strong>Number</strong>(12.5), <strong>String</strong>("someString")<br>
                             <strong>Location</strong><br>
                             <div style="margin-left: 10px">
-                                <strong>Path</strong>(http://someHost:8080/endpoint1/<strong>12</strong>)<br>
+                                <strong>Path</strong>(http://someHost:8080/endpoint1/<strong>12</strong>) - it must be required<br>
                                 <strong>URL</strong>(http://someHost:8080/endpoint1<strong>?name=someString</strong>)<br>
                                 <strong>Header</strong> - you can add some header parameters if you want.<br>
                                 <strong>Is required</strong> - you can define the requiredness of the parameter.
@@ -233,23 +233,50 @@
                     })
                     .then((data) => {
                         if(data.status == 200){
-                            location.reload()
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: 'Service was created'
+                            })
+                            setTimeout(() => {
+                               location.reload() 
+                            }, 2000);
                         } else {
-                            alert("Some error occured!")
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Some error occured'
+                            })
                         }
                     })
                 },
                 checkData(){
-                    if (this.info.VERSION_NAME && this.info.ENDPOINT && this.info.SQL_CODE && this.checkParams(this.info.PARAMS)
+                    if (!(this.info.VERSION_NAME && this.info.ENDPOINT && this.info.SQL_CODE && this.checkParams(this.info.PARAMS)
                        && this.info.pool.CONNECT_STRING && this.info.pool.POOL_USER && this.info.pool.POOL_PASSWORD && this.info.pool.POOL_MIN
                        && this.info.pool.POOL_MAX && this.info.pool.POOL_TIMEOUT && this.info.pool.POOL_PING_INTERVAL && this.info.pool.QUEUE_MAX
-                       && this.info.pool.QUEUE_TIMEOUT) return true
-                    return false
+                       && this.info.pool.QUEUE_TIMEOUT)) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'All fields should be filled. Every "PATH" parameter should be required.'
+                        })
+                        return false
+                    }
+                    if(this.info.ENDPOINT == "createService" || this.info.ENDPOINT == "createNewVersion" || this.info.ENDPOINT == "getServiceInfo" ||
+                       this.info.ENDPOINT == "updateVersion" || this.info.ENDPOINT == "getServices" || this.info.ENDPOINT == "updateHttpListener") {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Endpoint can not be "createService" or "createNewVersion" or "getServiceInfo" or "updateVersion" or "getServices" or "updateHttpListener"'
+                        })
+                           return false
+                    }
+                    return true
                 },
                 checkParams(arr){
                     var checkP = false
                     arr.forEach(el => {
-                        if (!el.NAME || !el.TYPE || !el.LOCATION) checkP = true
+                        if (!el.NAME || !el.TYPE || !el.LOCATION || (el.LOCATION == "Path" && !el.IS_REQUIRED)) checkP = true
                     })
                     return !checkP
                 }
@@ -320,7 +347,7 @@
                         <div class="sminputDiv">
                             <div class="label">Type:</div>
                             <select v-model="el.TYPE">
-                                <option disabled>Выберите героя</option>
+                                <option disabled>Выберите тип</option>
                                 <option value="Integer">Integer</option>
                                 <option value="Number">Number</option>
                                 <option value="String">String</option>
@@ -329,7 +356,7 @@
                         <div class="sminputDiv">
                             <div class="label">Location:</div>
                             <select v-model="el.LOCATION">
-                                <option disabled>Выберите героя</option>
+                                <option disabled>Выберите местонахождение</option>
                                 <option value="URL">URL</option>
                                 <option value="Header">Header</option>
                                 <option value="Path">Path</option>
@@ -405,24 +432,6 @@
                 removeParam(){
                     this.info.PARAMS.pop()
                 },
-                createService(){
-                    if(!this.checkData()) return
-                    var url = window.location.href
-                    fetch(url + "createService", {
-                        method: 'POST',
-                        body: JSON.stringify(this.info),
-                        headers:{
-                            'Content-Type': 'application/json'
-                        }
-                    })
-                    .then((data) => {
-                        if(data.status == 200){
-                            location.reload()
-                        } else {
-                            alert("Some error occured!")
-                        }
-                    })
-                },
                 createNewVersion(){
                     if(!this.checkData()) return
                     var url = window.location.href
@@ -435,23 +444,50 @@
                     })
                     .then((data) => {
                         if(data.status == 200){
-                            location.reload()
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: 'New version was created'
+                            })
+                            setTimeout(() => {
+                               location.reload() 
+                            }, 2000);
                         } else {
-                            alert("Some error occured!")
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Some error occured'
+                            })
                         }
                     })
                 },
                 checkData(){
-                    if (this.info.VERSION_NAME && this.info.ENDPOINT && this.info.SQL_CODE && this.checkParams(this.info.PARAMS)
+                    if (!(this.info.VERSION_NAME && this.info.ENDPOINT && this.info.SQL_CODE && this.checkParams(this.info.PARAMS)
                        && this.info.pool.CONNECT_STRING && this.info.pool.POOL_USER && this.info.pool.POOL_PASSWORD && this.info.pool.POOL_MIN
                        && this.info.pool.POOL_MAX && this.info.pool.POOL_TIMEOUT && this.info.pool.POOL_PING_INTERVAL && this.info.pool.QUEUE_MAX
-                       && this.info.pool.QUEUE_TIMEOUT) return true
-                    return false
+                       && this.info.pool.QUEUE_TIMEOUT)) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'All fields should be filled. Every "PATH" parameter should be required.'
+                        })
+                        return false
+                    }
+                    if(this.info.ENDPOINT == "createService" || this.info.ENDPOINT == "createNewVersion" || this.info.ENDPOINT == "getServiceInfo" ||
+                       this.info.ENDPOINT == "updateVersion" || this.info.ENDPOINT == "getServices" || this.info.ENDPOINT == "updateHttpListener") {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Endpoint can not be "createService" or "createNewVersion" or "getServiceInfo" or "updateVersion" or "getServices" or "updateHttpListener"'
+                        })
+                           return false
+                    }
+                    return true
                 },
                 checkParams(arr){
                     var checkP = false
                     arr.forEach(el => {
-                        if (!el.NAME || !el.TYPE || !el.LOCATION) checkP = true
+                        if (!el.NAME || !el.TYPE || !el.LOCATION || (el.LOCATION == "Path" && !el.IS_REQUIRED)) checkP = true
                     })
                     return !checkP
                 },
@@ -459,11 +495,11 @@
                     var url = window.location.href
                     var copy;
                     fetch(url + "getServiceInfo", {
-                    method: 'POST',
-                    body: JSON.stringify({ENDPOINT: this.selectedObject.ENDPOINT, VERSION_ID: this.selectedObject.VERSION_ID}),
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                        method: 'POST',
+                        body: JSON.stringify({ENDPOINT: this.selectedObject.ENDPOINT, VERSION_ID: this.selectedObject.VERSION_ID}),
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
                     })
                     .then(response => {
                         return response.json()
@@ -498,7 +534,7 @@
                 </div>
                 <div class="inputDiv">
                     <div class="label">Endpoint: </div>
-                    <input class="input" type="text"c readonly v-model="info.ENDPOINT">
+                    <input class="input" type="text" readonly v-model="info.ENDPOINT">
                 </div>
                 <div class="inputDiv">
                     <div class="label">Is Enabled: </div>
@@ -551,7 +587,7 @@
                         <div class="sminputDiv">
                             <div class="label">Type:</div>
                             <select v-model="el.TYPE">
-                                <option disabled>Выберите героя</option>
+                                <option disabled>Выберите тип</option>
                                 <option value="Integer">Integer</option>
                                 <option value="Number">Number</option>
                                 <option value="String">String</option>
@@ -560,7 +596,7 @@
                         <div class="sminputDiv">
                             <div class="label">Location:</div>
                             <select v-model="el.LOCATION">
-                                <option disabled>Выберите героя</option>
+                                <option disabled>Выберите местонахождение</option>
                                 <option value="URL">URL</option>
                                 <option value="Header">Header</option>
                                 <option value="Path">Path</option>
@@ -649,23 +685,50 @@
                     })
                     .then((data) => {
                         if(data.status == 200){
-                            location.reload()
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: 'Version was updated'
+                            })
+                            setTimeout(() => {
+                               location.reload() 
+                            }, 2000);
                         } else {
-                            alert("Some error occured!")
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Some error occured'
+                            })
                         }
                     })
                 },
                 checkData(){
-                    if (this.info.VERSION_NAME && this.info.ENDPOINT && this.info.SQL_CODE && this.checkParams(this.info.PARAMS)
+                    if (!(this.info.VERSION_NAME && this.info.ENDPOINT && this.info.SQL_CODE && this.checkParams(this.info.PARAMS)
                        && this.info.pool.CONNECT_STRING && this.info.pool.POOL_USER && this.info.pool.POOL_PASSWORD && this.info.pool.POOL_MIN
                        && this.info.pool.POOL_MAX && this.info.pool.POOL_TIMEOUT && this.info.pool.POOL_PING_INTERVAL && this.info.pool.QUEUE_MAX
-                       && this.info.pool.QUEUE_TIMEOUT) return true
-                    return false
+                       && this.info.pool.QUEUE_TIMEOUT)) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'All fields should be filled. Every "PATH" parameter should be required.'
+                        })
+                        return false
+                    }
+                    if(this.info.ENDPOINT == "createService" || this.info.ENDPOINT == "createNewVersion" || this.info.ENDPOINT == "getServiceInfo" ||
+                       this.info.ENDPOINT == "updateVersion" || this.info.ENDPOINT == "getServices" || this.info.ENDPOINT == "updateHttpListener") {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Endpoint can not be "createService" or "createNewVersion" or "getServiceInfo" or "updateVersion" or "getServices" or "updateHttpListener"'
+                        })
+                           return false
+                    }
+                    return true
                 },
                 checkParams(arr){
                     var checkP = false
                     arr.forEach(el => {
-                        if (!el.NAME || !el.TYPE || !el.LOCATION) checkP = true
+                        if (!el.NAME || !el.TYPE || !el.LOCATION || (el.LOCATION == "Path" && !el.IS_REQUIRED)) checkP = true
                     })
                     return !checkP
                 },
@@ -712,7 +775,7 @@
                 </div>
                 <div class="inputDiv">
                     <div class="label">Endpoint: </div>
-                    <input class="input" type="text"c readonly v-model="info.ENDPOINT">
+                    <input class="input" type="text" readonly v-model="info.ENDPOINT">
                 </div>
                 <div class="inputDiv">
                     <div class="label">Is Enabled: </div>
@@ -765,7 +828,7 @@
                         <div class="sminputDiv">
                             <div class="label">Type:</div>
                             <select v-model="el.TYPE">
-                                <option disabled>Выберите героя</option>
+                                <option disabled>Выберите тип</option>
                                 <option value="Integer">Integer</option>
                                 <option value="Number">Number</option>
                                 <option value="String">String</option>
@@ -774,7 +837,7 @@
                         <div class="sminputDiv">
                             <div class="label">Location:</div>
                             <select v-model="el.LOCATION">
-                                <option disabled>Выберите героя</option>
+                                <option disabled>Выберите местонахождение</option>
                                 <option value="URL">URL</option>
                                 <option value="Header">Header</option>
                                 <option value="Path">Path</option>
@@ -832,7 +895,12 @@
             },
             methods: {
                 checkPassword(){
-                    if(this.password == "myApiPass") this.isModal = false
+                    if(this.password == "myApiPass") return this.isModal = false
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Password is incorrect'
+                    })
                 }
             }
         })
