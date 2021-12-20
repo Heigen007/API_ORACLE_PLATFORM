@@ -4,7 +4,6 @@
     <%- include('./head'); %>
 </head>
 <body>
-    
     <div id="app">
         <div class="buttons">
             <div class="but grey" v-bind:class="{ chosenGrey: chosenMainPage == 'settings'}" @click='chosenMainPage = "settings"'>Settings</div>
@@ -38,7 +37,7 @@
             </div>
             <div v-if="!isModal" class="mainBody">
                 <keep-alive>
-                    <create-new-service v-if="chosenPage == 'create-new-service'"></create-new-service>
+                    <create-new-service v-if="chosenPage == 'create-new-service'" :services = "services"></create-new-service>
                     <update-service v-if="chosenPage == 'update-service'" :selected-object="selectedObject"></update-service>
                     <update-version v-if="chosenPage == 'update-version'" :selected-object="selectedObject"></update-version>
                 </keep-alive>
@@ -61,7 +60,7 @@
                             Then you should write down 3 parameters:<br>
                             <strong>Version name</strong>(version from 10th of August) - the name of the version(you can see it in the second column of the table).<br>
                             <strong>Description</strong>(some Text) - discription of the version(optional).<br>
-                            <strong>Endpoint</strong>(someEndpoint/someApi/andSoOn) - you <strong>should not</strong> put <code>'/'</code> at the beginning of the Endpoint.<br>
+                            <strong>Endpoint</strong>(someEndpoint/someApi/andSoOn) - you <strong>should not</strong> put <code>'/'</code> at the beginning of the Endpoint. <strong style="color: red">NOTICE!</strong> One endpoint can not contain another. For example "xxx/xxx" and "xxx/xxx/x" are illegal.<br>
                             <strong>Is enabled</strong>(true/false) - you can define the status of the service. If false, service does not work.
                         </div>
                     </div>
@@ -117,7 +116,7 @@
                     <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#accordionExample">
                         <div class="accordion-body">
                             <strong>SQL query.</strong> Here you should write your sql code. You should use parameters you want to put into your sql code in like this: <code>${name}</code>.<br>
-                            <strong style="color: red">NOTE!</strong> If your parameter is optional(not required) you should use such structure:<br>
+                            <strong style="color: red">NOTICE!</strong> If your parameter is optional(not required) you should use such structure:<br>
                             <code>
                                 {{sqlExStartCode}}<br>
                                 <div style="white-space: pre;">    ,${name} AS name</div>
@@ -214,6 +213,9 @@
                     selectedObject: {}
                 }
             },
+            props: {
+                services: Array
+            },
             methods:{
                 addParam(){
                     this.info.PARAMS.push({NAME: '',TYPE:'',LOCATION:'',IS_REQUIRED:false})
@@ -236,7 +238,7 @@
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Success',
-                                text: 'Service was created'
+                                text: 'Web service was created'
                             })
                             setTimeout(() => {
                                location.reload() 
@@ -262,6 +264,15 @@
                         })
                         return false
                     }
+                    var chEndp = this.checkEndpoint();
+                    if(!chEndp[0]){
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'One endpoint can not contain another. Endpoints: "'+ chEndp[1][0] + '" and "' + chEndp[1][0] + '"'
+                        })
+                        return false
+                    }
                     if(this.info.ENDPOINT == "createService" || this.info.ENDPOINT == "createNewVersion" || this.info.ENDPOINT == "getServiceInfo" ||
                        this.info.ENDPOINT == "updateVersion" || this.info.ENDPOINT == "getServices" || this.info.ENDPOINT == "updateHttpListener") {
                         Swal.fire({
@@ -279,6 +290,29 @@
                         if (!el.NAME || !el.TYPE || !el.LOCATION || (el.LOCATION == "Path" && !el.IS_REQUIRED)) checkP = true
                     })
                     return !checkP
+                },
+                checkEndpoint(){
+                    var services = [];
+                    var bool = false;
+                    var boolArr = []
+                    this.services.forEach(el => {
+                        services.push(el.ENDPOINT + "/")
+                    })
+                    services = [...new Set(services)]
+                    services.push(this.info.ENDPOINT + "/")
+                    console.log(services,"lllllllllll");
+                    for (let i = 0; i < services.length; i++) {
+                        for (let o = 0; o < services.length; o++) {
+                            console.log(services[i].includes(services[o]), services[o].includes(services[i]), services[i], services[o]);
+                            if((services[i].includes(services[o]) || services[o].includes(services[i])) && o != i) {
+                                console.log("includes true", services[i],services[o]);
+                                bool = true;
+                                boolArr[0] = services[i]
+                                boolArr[1] = services[o]
+                            }
+                        }
+                    }
+                    return [!bool, boolArr]
                 }
             },
             template: 
@@ -895,11 +929,17 @@
             },
             methods: {
                 checkPassword(){
-                    if(this.password == "myApiPass") return this.isModal = false
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Password is incorrect'
+                    fetch(window.location.href + "checkPassword?pas=" + md5(this.password))
+                    .then(res => {
+                        if(res.status != 200){
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Password is incorrect'
+                            })
+                            return
+                        }
+                        this.isModal = false
                     })
                 }
             }

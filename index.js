@@ -2,10 +2,12 @@ var express = require('express');
 var app = express();
 var compression = require('compression')
 var cors = require('cors');
+var md5 = require('blueimp-md5')
 
 const oracledb = require('oracledb');
 const mypw = "(DESCRIPTION =(ADDRESS_LIST =(LOAD_BALANCE = yes)(FAILOVER = on)(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.155)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.154)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.153)(PORT = 1521)))(CONNECT_DATA =(SERVER = DEDICATED)(SERVICE_NAME = ars)(FAILOVER_MODE =(TYPE = SELECT)(METHOD = BASIC)(RETRIES = 5)(DELAY = 15))))"
 const port = 3000
+const pass = "dfc09073e0bfd69aadbcc433386d5575"
 const createService = require("./createService")
 const createNewVersion = require("./createNewVersion")
 const getServices = require("./getServices.js")
@@ -15,7 +17,7 @@ const createLog = require("./createLog")
 const checkParameter = require("./checkParameter")
 const findAdditionalPathString = require("./findAdditionalPathString")
 const createDBPool = require("./createDBPool");
-const parseSql = require("./parseSql")
+const parseSql = require("./parseSql");
 
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT
 oracledb.fetchAsString = [ oracledb.CLOB ];
@@ -51,6 +53,12 @@ init()
 app.get('/', function(req, res) {
   res.render('page/index');
 });
+
+app.get('/checkPassword', function(req, res) {
+  if(req.query.pas && req.query.pas == pass) return res.sendStatus(200)
+  return res.sendStatus(500)
+});
+
 app.get('/getServices', async function(req, res) {
   var result = await getServices(oracledb)
   if(result) return res.send(result.rows);
@@ -97,7 +105,7 @@ app.get('/updateHttpListener', async function(req, res) {
   }
   var result = await updateHttpListener(req.query.methodId)
   if(result && result == "methodId") {
-    createLog('updateHttpListener', 'ERROR', 'methodId(' + req.query.methodId + ') is incorrect')
+    createLog('updateHttpListener', 'ERROR', 'methodId(' + req.query.methodId + ') is incorrect. Maybe it is not the last version(only last version can work)')
     return res.sendStatus(400)
   }
   if(result && result == "notEnabled") {
@@ -189,11 +197,14 @@ async function updateHttpListener(methodId){
     if(!poolRes) return false
     var additionalPathString = findAdditionalPathString(params)
     app._router.stack = app._router.stack.filter(el2 => {
-      return !el2.route?.path.includes(`/${el.ENDPOINT}`)
+      return !(el2.route?.path.split("/:")[0] == '/' + el.ENDPOINT)
     });
-    console.log("/" + el.ENDPOINT + additionalPathString);
+    app._router.stack = app._router.stack.filter(el2 => {
+      console.log(el2.route?.path);
+      return true
+    });
     app.get("/" + el.ENDPOINT + additionalPathString, async function(req,res) {
-      
+      console.log(res);
       var result;
       var sqlString = el.SQL_CODE
       if(params){
@@ -203,7 +214,7 @@ async function updateHttpListener(methodId){
         params.forEach(el2 => {
           result = checkParameter(req,el2)
           if(!result[0]) {isErr[1] = result[1]; return isErr[0] = 1}
-          if(result[1] != "NOT_GIVEN"){
+          if(result[1] != "NOT_GIVEN") {
             paramsArr.push(el2.NAME)
             parMap.push({name: el2.NAME, type: el2.TYPE, result: result[1]})
           }
@@ -364,9 +375,6 @@ async function forLoopClosure(lastMethodsVersions, indexM){
     var poolRes = await createDBPool(oracledb,el)
     if(!poolRes) return false
     var additionalPathString = findAdditionalPathString(params)
-    app._router.stack = app._router.stack.filter(el2 => {
-      return !el2.route?.path.includes(`/${el.ENDPOINT}`)
-    });
     app.get("/" + el.ENDPOINT + additionalPathString, async function(req,res) {
       var result;
       var sqlString = el.SQL_CODE
