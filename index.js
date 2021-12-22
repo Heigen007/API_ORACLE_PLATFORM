@@ -56,7 +56,7 @@ app.get('/', function(req, res) {
 
 app.get('/checkPassword', function(req, res) {
   if(req.query.pas && req.query.pas == pass) return res.sendStatus(200)
-  return res.sendStatus(500)
+  return res.sendStatus(300)
 });
 
 app.get('/getServices', async function(req, res) {
