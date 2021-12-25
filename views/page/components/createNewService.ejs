@@ -6,6 +6,7 @@ Vue.component('create-new-service', {
                 VERSION_NAME: "",
                 IS_ENABLED: true,
                 SQL_CODE: "",
+                HTTP_METHOD: "",
                 PARAMS: [],
                 pool:{
                     CONNECT_STRING: "",
@@ -29,7 +30,7 @@ Vue.component('create-new-service', {
     },
     methods:{
         addParam(){
-            this.info.PARAMS.push({NAME: '',TYPE:'',LOCATION:'',IS_REQUIRED:false})
+            this.info.PARAMS.push({NAME: '',TYPE:'',LOCATION:'',IS_REQUIRED:false, JSON_PATH:""})
         },
         removeParam(){
             this.info.PARAMS.pop()
@@ -64,7 +65,7 @@ Vue.component('create-new-service', {
             })
         },
         checkData(){
-            if (!(this.info.VERSION_NAME && this.info.ENDPOINT && this.info.SQL_CODE && this.checkParams(this.info.PARAMS)
+            if (!(this.info.VERSION_NAME && this.info.ENDPOINT && this.info.HTTP_METHOD && this.info.SQL_CODE && this.checkParams(this.info.PARAMS)[0]
                && this.info.pool.CONNECT_STRING && this.info.pool.POOL_USER && this.info.pool.POOL_PASSWORD && this.info.pool.POOL_MIN
                && this.info.pool.POOL_MAX && this.info.pool.POOL_TIMEOUT && this.info.pool.POOL_PING_INTERVAL && this.info.pool.QUEUE_MAX
                && this.info.pool.QUEUE_TIMEOUT)) {
@@ -75,6 +76,16 @@ Vue.component('create-new-service', {
                 })
                 return false
             }
+            if(this.checkParams(this.info.PARAMS)[1] && this.info.HTTP_METHOD == "GET") {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Http method should be "POST" in case you have "BODY" parameter.'
+                })
+                return false
+            }
+            if(this.info.ENDPOINT[0] == "/") this.info.ENDPOINT = this.info.ENDPOINT.slice(1,this.info.ENDPOINT.length)
+            if(this.info.ENDPOINT[this.info.ENDPOINT.length] == "/") this.info.ENDPOINT = this.info.ENDPOINT.slice(0,this.info.ENDPOINT.length - 1)
             var chEndp = this.checkEndpoint();
             if(!chEndp[0]){
                 Swal.fire({
@@ -97,10 +108,12 @@ Vue.component('create-new-service', {
         },
         checkParams(arr){
             var checkP = false
+            var isPost = false
             arr.forEach(el => {
-                if (!el.NAME || !el.TYPE || !el.LOCATION || (el.LOCATION == "Path" && !el.IS_REQUIRED)) checkP = true
+                if (!el.NAME || !el.TYPE || !el.LOCATION || (el.LOCATION == "Path" && !el.IS_REQUIRED) || (el.LOCATION == "Body" && !el.JSON_PATH)) checkP = true
+                if(el.LOCATION == "Body") isPost = true
             })
-            return !checkP
+            return [!checkP, isPost]
         },
         checkEndpoint(){
             var services = [];
@@ -140,6 +153,14 @@ Vue.component('create-new-service', {
         <div class="inputDiv">
             <div class="label">Endpoint: </div>
             <input class="input" type="text" v-model="info.ENDPOINT">
+        </div>
+        <div class="inputDiv">
+            <div class="label">Http method: </div>
+            <select v-model="info.HTTP_METHOD">
+                <option disabled>Choose the method</option>
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+            </select>
         </div>
         <div class="inputDiv">
             <div class="label">Is Enabled: </div>
@@ -207,7 +228,12 @@ Vue.component('create-new-service', {
                         <option value="URL">URL</option>
                         <option value="Header">Header</option>
                         <option value="Path">Path</option>
+                        <option value="Body">Body</option>
                     </select>
+                </div>
+                <div class = "sminputDiv" v-if="el.LOCATION == 'Body'">
+                    <div class="label">JSONPath:</div>
+                    <input class="input" type="text" v-model="el.JSON_PATH" >
                 </div>
                 <div class="sminputDiv">
                     <div class="label">Required:</div>

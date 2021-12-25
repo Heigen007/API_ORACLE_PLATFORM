@@ -48,11 +48,10 @@
     
     
     <script>
+        Vue.config.devtools = true;
         <%- include('./components/createNewService'); %>
         <%- include('./components/updateService'); %>
         <%- include('./components/updateVersion'); %>
-        
-
         new Vue({
             el: '#app',
             data: {
@@ -61,7 +60,7 @@
                 services: [],
                 selectedObject: {},
                 password: "",
-                isModal: true,
+                isModal: false,
                 sqlExStartCode: '<if testParameter="name">',
                 sqlExEndCode: ' </if>',
                 sqlFullCode: ["SELECT ${age} AS AGe",'<if testParameter="name">','  ,${name} AS name','</if>',',1 AS NUMBERm','FROM REST_WEB_METHODS_PARAMETER','<if testParameter="name">', '  WHERE ${name} = \'someValue\'','</if>'],

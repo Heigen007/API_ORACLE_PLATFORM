@@ -8,7 +8,7 @@ async function updateVersion(oracledb, data) {
       for(let i = 0; i < data.PARAMS.length; i++){
         var parameterId = await connection.execute("SELECT REST_WEB_METHODS_PARAMETER_SEQ.nextval FROM dual");
         parameterId = parameterId.rows[0].NEXTVAL;
-        await connection.execute(`INSERT INTO REST_WEB_METHODS_PARAMETER VALUES (${parameterId}, '${data.PARAMS[i].NAME}', ${data.PARAMS[i].IS_REQUIRED ? 1 : 0}, ${data.METHOD_ID}, ${data.VERSION_ID}, '${data.PARAMS[i].TYPE}', '${data.PARAMS[i].LOCATION}')`);
+        await connection.execute(`INSERT INTO REST_WEB_METHODS_PARAMETER VALUES (${parameterId}, '${data.PARAMS[i].NAME}', ${data.PARAMS[i].IS_REQUIRED ? 1 : 0}, ${data.METHOD_ID}, ${data.VERSION_ID}, '${data.PARAMS[i].TYPE}', '${data.PARAMS[i].LOCATION}', '${data.PARAMS[i].JSON_PATH}')`);
       }
       data.SQL_CODE = data.SQL_CODE.replace(/'/g, "\"");
       if(data.JSON_CONFIG) await connection.execute(`UPDATE REST_WEB_METHODS_SQL SET SQL_CODE = '${data.SQL_CODE}', JSON_CONFIG = '${data.JSON_CONFIG}'  WHERE ID = ${data.SQLID}`);

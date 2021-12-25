@@ -4,10 +4,11 @@ var compression = require('compression')
 var cors = require('cors');
 var md5 = require('blueimp-md5')
 
-const oracledb = require('oracledb');
 const mypw = "(DESCRIPTION =(ADDRESS_LIST =(LOAD_BALANCE = yes)(FAILOVER = on)(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.155)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.154)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.153)(PORT = 1521)))(CONNECT_DATA =(SERVER = DEDICATED)(SERVICE_NAME = ars)(FAILOVER_MODE =(TYPE = SELECT)(METHOD = BASIC)(RETRIES = 5)(DELAY = 15))))"
 const port = 3000
 const pass = "dfc09073e0bfd69aadbcc433386d5575"
+
+const oracledb = require('oracledb');
 const createService = require("./createService")
 const createNewVersion = require("./createNewVersion")
 const getServices = require("./getServices.js")
@@ -127,6 +128,7 @@ async function updateHttpListener(methodId){
     SELECT
       ENDPOINT,
       IS_ENABLED,
+      HTTP_METHOD,
       rwmv.ID AS VERSION_ID,
       rwmc.SQL_CODE,
       rwmc.JSON_CONFIG,
@@ -176,7 +178,8 @@ async function updateHttpListener(methodId){
         IS_REQUIRED,
         TYPE,
         rwmp.ID as PARAMETER_ID,
-        LOCATION
+        LOCATION,
+        JSON_PATH
       FROM
         REST_WEB_METHODS rwm,
         REST_WEB_METHODS_VERSION rwmv,
@@ -200,11 +203,18 @@ async function updateHttpListener(methodId){
       return !(el2.route?.path.split("/:")[0] == '/' + el.ENDPOINT)
     });
     app._router.stack = app._router.stack.filter(el2 => {
-      console.log(el2.route?.path);
       return true
     });
-    app.get("/" + el.ENDPOINT + additionalPathString, async function(req,res) {
-      console.log(res);
+    if(el.HTTP_METHOD == "GET") {
+      app.get("/" + el.ENDPOINT + additionalPathString, async function(req,res) {
+        await method(req,res)
+      })      
+    } else if (el.HTTP_METHOD == "POST") {
+      app.post("/" + el.ENDPOINT + additionalPathString, async function(req,res) {
+        await method(req,res)
+      })     
+    }
+    async function method(req, res){
       var result;
       var sqlString = el.SQL_CODE
       if(params){
@@ -220,7 +230,7 @@ async function updateHttpListener(methodId){
           }
         })
         if(isErr[0]) return res.status(400).send(isErr[1])
-        if(sqlString.includes("<if testParameter=")) sqlString = parseSql(sqlString,paramsArr,parMap)
+        sqlString = parseSql(sqlString,paramsArr,parMap)
         try {
           var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
         }
@@ -276,7 +286,7 @@ async function updateHttpListener(methodId){
         }
       }
       sqlString = null
-    })
+    }
     return 1
   }
   catch (err) {
@@ -298,6 +308,7 @@ async function makeMAINHttpListeners(){
   SELECT
     ENDPOINT,
     IS_ENABLED,
+    HTTP_METHOD,
     rwmv.ID AS VERSION_ID,
     rwmc.SQL_CODE,
     rwmc.JSON_CONFIG,
@@ -354,7 +365,8 @@ async function forLoopClosure(lastMethodsVersions, indexM){
         IS_REQUIRED,
         TYPE,
         rwmp.ID as PARAMETER_ID,
-        LOCATION
+        LOCATION,
+        JSON_PATH
       FROM
         REST_WEB_METHODS rwm,
         REST_WEB_METHODS_VERSION rwmv,
@@ -375,7 +387,16 @@ async function forLoopClosure(lastMethodsVersions, indexM){
     var poolRes = await createDBPool(oracledb,el)
     if(!poolRes) return false
     var additionalPathString = findAdditionalPathString(params)
-    app.get("/" + el.ENDPOINT + additionalPathString, async function(req,res) {
+    if(el.HTTP_METHOD == "GET") {
+      app.get("/" + el.ENDPOINT + additionalPathString, async function(req,res) {
+        await method(req,res)
+      })      
+    } else if (el.HTTP_METHOD == "POST") {
+      app.post("/" + el.ENDPOINT + additionalPathString, async function(req,res) {
+        await method(req,res)
+      })     
+    }
+    async function method(req,res){
       var result;
       var sqlString = el.SQL_CODE
       if(params){
@@ -391,9 +412,7 @@ async function forLoopClosure(lastMethodsVersions, indexM){
           }
         })
         if(isErr[0]) return res.status(400).send(isErr[1])
-        if(sqlString.includes("<if testParameter=")) {
-          sqlString = parseSql(sqlString,paramsArr,parMap)
-        }
+        sqlString = parseSql(sqlString,paramsArr,parMap)
         try {
           var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
         }
@@ -449,7 +468,7 @@ async function forLoopClosure(lastMethodsVersions, indexM){
         }
       }
       sqlString = null
-    })
+    }
 }
 
 //http://localhost:8080/updateHttpListener?methodId=27

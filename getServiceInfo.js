@@ -9,7 +9,8 @@ async function createService(oracledb, data) {
           IS_REQUIRED,
           TYPE,
           rwmp.ID as PARAMETER_ID,
-          LOCATION
+          LOCATION,
+          JSON_PATH
         FROM
             REST_WEB_METHODS rwm,
             REST_WEB_METHODS_VERSION rwmv,
@@ -28,6 +29,7 @@ async function createService(oracledb, data) {
       var result = await connection.execute(`
         SELECT
           rwm.ENDPOINT,
+          rwm.HTTP_METHOD,
           rwm.ID AS METHOD_ID,
           rwm.IS_ENABLED,
           rwmc.SQL_CODE,

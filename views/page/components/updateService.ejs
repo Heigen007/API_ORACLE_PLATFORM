@@ -6,6 +6,7 @@ Vue.component('update-service', {
                 VERSION_NAME: "",
                 IS_ENABLED: false,
                 SQL_CODE: "",
+                HTTP_METHOD: "",
                 PARAMS: [],
                 pool:{
                     CONNECT_STRING: "",
@@ -36,7 +37,7 @@ Vue.component('update-service', {
     },
     methods:{
         addParam(){
-            this.info.PARAMS.push({NAME: '',TYPE:'',LOCATION:'',IS_REQUIRED:false})
+            this.info.PARAMS.push({NAME: '',TYPE:'',LOCATION:'',IS_REQUIRED:false,JSON_PATH:""})
         },
         removeParam(){
             this.info.PARAMS.pop()
@@ -96,7 +97,7 @@ Vue.component('update-service', {
         checkParams(arr){
             var checkP = false
             arr.forEach(el => {
-                if (!el.NAME || !el.TYPE || !el.LOCATION || (el.LOCATION == "Path" && !el.IS_REQUIRED)) checkP = true
+                if (!el.NAME || !el.TYPE || !el.LOCATION || (el.LOCATION == "Path" && !el.IS_REQUIRED) || (el.LOCATION == "Body" && !el.JSON_PATH)) checkP = true
             })
             return !checkP
         },
@@ -132,7 +133,7 @@ Vue.component('update-service', {
     },
     template: 
     `
-    <div class="mdiv">
+    <div class="mdiv" v-if="this.selectedObject.ENDPOINT">
         <div class="inputDiv">
             <div class="label">Version name: </div>
             <input class="input" type="text" v-model="info.VERSION_NAME">
@@ -144,6 +145,10 @@ Vue.component('update-service', {
         <div class="inputDiv">
             <div class="label">Endpoint: </div>
             <input class="input" type="text" readonly v-model="info.ENDPOINT">
+        </div>
+        <div class="inputDiv">
+            <div class="label">Http method: </div>
+            <input type="text" readonly v-model="info.HTTP_METHOD">
         </div>
         <div class="inputDiv">
             <div class="label">Is Enabled: </div>
@@ -211,7 +216,12 @@ Vue.component('update-service', {
                         <option value="URL">URL</option>
                         <option value="Header">Header</option>
                         <option value="Path">Path</option>
+                        <option value="Body">Body</option>
                     </select>
+                </div>
+                <div class = "sminputDiv" v-if="el.LOCATION == 'Body'">
+                    <div class="label">JSONPath:</div>
+                    <input class="input" type="text" v-model="el.JSON_PATH" >
                 </div>
                 <div class="sminputDiv">
                     <div class="label">Required:</div>
