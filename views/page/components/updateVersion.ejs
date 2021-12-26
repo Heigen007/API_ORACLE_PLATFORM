@@ -1,29 +1,5 @@
 Vue.component('update-version', {
-    data: function () {
-        return {
-            info:{
-                ENDPOINT: "",
-                VERSION_NAME: "",
-                IS_ENABLED: false,
-                SQL_CODE: "",
-                HTTP_METHOD: "",
-                PARAMS: [],
-                pool:{
-                    CONNECT_STRING: "",
-                    POOL_USER: "",
-                    POOL_PASSWORD: "",
-                    POOL_MAX: null,
-                    POOL_MIN: null,
-                    POOL_TIMEOUT: null,
-                    POOL_PING_INTERVAL: null,
-                    QUEUE_MAX: null,
-                    QUEUE_TIMEOUT: null
-                },
-                JSON_CONFIG: "",
-                DESCRIPTION: ""
-            }
-        }
-    },
+    <%- include('./jsParts/componentData'); %>
     props: {
         selectedObject: Object
     },
@@ -36,12 +12,7 @@ Vue.component('update-version', {
         if(this.selectedObject.ENDPOINT) this.getInfo()
     },
     methods:{
-        addParam(){
-            this.info.PARAMS.push({NAME: '',TYPE:'',LOCATION:'',IS_REQUIRED:false,JSON_PATH:""})
-        },
-        removeParam(){
-            this.info.PARAMS.pop()
-        },
+        <%- include('./jsParts/paramsManipulations'); %>
         updateVersion(){
             if(!this.checkData()) return
             var url = window.location.href
@@ -83,15 +54,6 @@ Vue.component('update-version', {
                 })
                 return false
             }
-            if(this.info.ENDPOINT == "createService" || this.info.ENDPOINT == "createNewVersion" || this.info.ENDPOINT == "getServiceInfo" ||
-               this.info.ENDPOINT == "updateVersion" || this.info.ENDPOINT == "getServices" || this.info.ENDPOINT == "updateHttpListener") {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Endpoint can not be "createService" or "createNewVersion" or "getServiceInfo" or "updateVersion" or "getServices" or "updateHttpListener"'
-                })
-                   return false
-            }
             return true
         },
         checkParams(arr){
@@ -101,151 +63,21 @@ Vue.component('update-version', {
             })
             return !checkP
         },
-        getInfo(){
-            var url = window.location.href
-            var copy;
-            fetch(url + "getServiceInfo", {
-            method: 'POST',
-            body: JSON.stringify({ENDPOINT: this.selectedObject.ENDPOINT, VERSION_ID: this.selectedObject.VERSION_ID}),
-            headers: {
-                'Content-Type': 'application/json'
-            }
-            })
-            .then(response => {
-                return response.json()
-            })
-            .then(res => {
-                copy = res
-                copy.pool = {
-                    CONNECT_STRING: copy.CONNECT_STRING,
-                    POOL_USER: copy.POOL_USER,
-                    POOL_PASSWORD: copy.POOL_PASSWORD,
-                    POOL_MAX: copy.POOL_MAX,
-                    POOL_MIN: copy.POOL_MIN,
-                    POOL_TIMEOUT: copy.POOL_TIMEOUT,
-                    POOL_PING_INTERVAL: copy.POOL_PING_INTERVAL,
-                    QUEUE_MAX: copy.QUEUE_MAX,
-                    QUEUE_TIMEOUT: copy.QUEUE_TIMEOUT
-                }
-                this.info = copy
-            })
-        }
+        <%- include('./jsParts/getInfo'); %>
     },
     template: 
     `
     <div class="mdiv" v-if="this.selectedObject.ENDPOINT">
-        <div class="inputDiv">
-            <div class="label">Version name: </div>
-            <input class="input" type="text" v-model="info.VERSION_NAME">
-        </div>
-        <div class="inputDiv">
-            <div class="label">Description: </div>
-            <textarea v-model="info.DESCRIPTION"></textarea>
-        </div>
-        <div class="inputDiv">
-            <div class="label">Endpoint: </div>
-            <input class="input" type="text" readonly v-model="info.ENDPOINT">
-        </div>
-        <div class="inputDiv">
-            <div class="label">Http method: </div>
-            <input type="text" readonly v-model="info.HTTP_METHOD">
-        </div>
-        <div class="inputDiv">
-            <div class="label">Is Enabled: </div>
-            <input class="input" type="checkbox" disabled="true" v-model="info.IS_ENABLED">
-        </div>
+        <%- include('./htmlParts/mainParams'); %>
         <h2>Pool parameters:</h2>
-        <div class = "flexBoxC">
-            <div class="inputDiv">
-                <div class="label">user: </div>
-                <input class="input" type="text" v-model="info.pool.POOL_USER">
-            </div>
-            <div class="inputDiv">
-                <div class="label">password: </div>
-                <input class="input" type="text" v-model="info.pool.POOL_PASSWORD">
-            </div>
-            <div class="inputDiv">
-                <div class="label">connectString: </div>
-                <input class="input" type="text" v-model="info.pool.CONNECT_STRING">
-            </div>
-            <div class="inputDiv">
-                <div class="label">poolMin: </div>
-                <input class="input" type="number" v-model="info.pool.POOL_MIN">
-            </div>
-            <div class="inputDiv">
-                <div class="label">poolMax: </div>
-                <input class="input" type="number" v-model="info.pool.POOL_MAX">
-            </div>
-            <div class="inputDiv">
-                <div class="label">poolTimeout: </div>
-                <input class="input" type="number" v-model="info.pool.POOL_TIMEOUT">
-            </div>
-            <div class="inputDiv">
-                <div class="label">poolPingInterval: </div>
-                <input class="input" type="number" v-model="info.pool.POOL_PING_INTERVAL">
-            </div>
-            <div class="inputDiv">
-                <div class="label">queueMax: </div>
-                <input class="input" type="number" v-model="info.pool.QUEUE_MAX">
-            </div>
-            <div class="inputDiv">
-                <div class="label">queueTimeout: </div>
-                <input class="input" type="number" v-model="info.pool.QUEUE_TIMEOUT">
-            </div>
-        </div>
+        <%- include('./htmlParts/poolParams'); %>
         <h2 class="mt-2">Parameters:</h2>
-        <div class="parametres">
-            <div class="parametr" v-for="(el, i) in info.PARAMS" :key="i">\
-                <div class="sminputDiv">
-                    <div class="label">Name:</div>
-                    <input class="input" type="text" v-model="el.NAME">
-                </div>
-                <div class="sminputDiv">
-                    <div class="label">Type:</div>
-                    <select v-model="el.TYPE">
-                        <option disabled>Выберите тип</option>
-                        <option value="Integer">Integer</option>
-                        <option value="Number">Number</option>
-                        <option value="String">String</option>
-                    </select>
-                </div>
-                <div class="sminputDiv">
-                    <div class="label">Location:</div>
-                    <select v-model="el.LOCATION">
-                        <option disabled>Выберите местонахождение</option>
-                        <option value="URL">URL</option>
-                        <option value="Header">Header</option>
-                        <option value="Path">Path</option>
-                        <option value="Body">Body</option>
-                    </select>
-                </div>
-                <div class = "sminputDiv" v-if="el.LOCATION == 'Body'">
-                    <div class="label">JSONPath:</div>
-                    <input class="input" type="text" v-model="el.JSON_PATH" >
-                </div>
-                <div class="sminputDiv">
-                    <div class="label">Required:</div>
-                    <input class="input" type="checkbox" v-model="el.IS_REQUIRED">
-                </div>
-                <hr/>
-            </div>
-        </div>
-        <div class="smbut" style="background-color: grey; margin-bottom: 10px" @click="addParam">Add parameter</div>
-        <div class="smbut" style="background-color: red" @click="removeParam">Remove parameter</div>
+        <%- include('./htmlParts/params'); %>
         <h2>SQL query:</h2>
-        <div style="font-size: 0.8em">Example on the docs page</div>
-        <div class="sqlQuery">
-            <div class="inputDiv">
-                <textarea class="input resisableArea" type="text" v-model="info.SQL_CODE"></textarea>
-            </div>
-        </div>
+        <%- include('./htmlParts/sqlCode'); %>
         <h2>Final JSON format:</h2>
         <div style="font-size: 0.8em">Find more information on docs page</div>
-        <div class="sqlQuery">
-            <div class="inputDiv">
-                <textarea class="input resisableArea" type="text" v-model="info.JSON_CONFIG"></textarea>
-            </div>
-        </div>
+        <%- include('./htmlParts/jsonCode'); %>
         <div class="but create mt" @click='updateVersion'>Update selected version</div>
     </div>
     `

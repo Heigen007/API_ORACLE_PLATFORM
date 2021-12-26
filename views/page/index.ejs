@@ -64,7 +64,7 @@
                 sqlExStartCode: '<if testParameter="name">',
                 sqlExEndCode: ' </if>',
                 sqlFullCode: ["SELECT ${age} AS AGe",'<if testParameter="name">','  ,${name} AS name','</if>',',1 AS NUMBERm','FROM REST_WEB_METHODS_PARAMETER','<if testParameter="name">', '  WHERE ${name} = \'someValue\'','</if>'],
-                jsFullCode: ['var finalArr = [];','var temp;','result.rows.forEach(el => {','  temp = {','    Age: el.AGE,','    Name: el.NAME,','    customNumber: el.NUMBERM','  }','  finalArr.push(temp)','})','if(!finalArr.length) return res.sendStatus(500)','// or res.status(500).send({errCode: 500}) - you can send any response you want.','res.status(200).send(finalArr)']
+                jsFullCode: ['var finalArr = [];','var temp;','result.rows.forEach(el => {','  temp = {','    Age: el.AGE,','    Name: el.NAME,','    customNumber: el.NUMBERM','  }','  finalArr.push(temp)','})','if(!finalArr.length) return res.sendStatus(500)  // in case there are no found objects in DB','// or res.status(500).send({errCode: 500}) - you can send any response you want.','res.status(200).send(finalArr) // if everything is OK']
             },
             mounted(){
                 var url = window.location.href

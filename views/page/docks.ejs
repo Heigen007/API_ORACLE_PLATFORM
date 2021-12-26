@@ -34,7 +34,7 @@
                     <strong>3. connectString</strong> - Database connection string - you can find it in TNSNAMES for example((DESCRIPTION =(ADDRESS_LIST =(ADDRESS = (PROTOCOL = TCP)(HOST = 11.1.1.111)(PORT = 1111)))(CONNECT_DATA =(SERVICE_NAME = SOMEDATA))))<br>
                     <strong>4. poolMin</strong> - The number of connections established to the database when a pool is created.<br>
                     <strong>5. poolMax</strong> - The maximum number of connections to which a connection pool can grow.<br>
-                    <strong>6. poolTimeout</strong> - The number of seconds after which idle connections (unused in the pool) may be terminated. So, if there is no current connections, the number of connections will be equal to poolMin property.<br>
+                    <strong>6. poolTimeout</strong> - The number of seconds after which idle connections (unused in the pool) may be terminated. So, if there are no current connections, the number of connections will be equal to poolMin property.<br>
                     <strong>7. poolPingInterval</strong> - This property is not important, it is used to validate the connection in the pool.<br>
                     <strong>8. queueMax</strong> - The maximum number of pending connections that can be queued. If queue reaches queueMax number, any future requests will immediately return an error and will not be queued. You can set it to <strong>-1</strong> to make the queue not limited.<br>
                     <strong>9. queueTimeout</strong> - The number of milliseconds after which connection requests waiting in the connection request queue are terminated. If queueTimeout is set to 0, then queued connection requests are never terminated.<br>
@@ -57,8 +57,10 @@
                         <strong>Path</strong>(http://someHost:8080/endpoint1/<strong>12</strong>) - it must be required<br>
                         <strong>URL</strong>(http://someHost:8080/endpoint1<strong>?name=someString</strong>)<br>
                         <strong>Header</strong> - you can add some header parameters if you want.<br>
-                        <strong>Is required</strong> - you can define the requiredness of the parameter.
+                        <strong>Body</strong> - such a parameter will be in the body of "POST" http request.<br>
                     </div>
+                    <strong>Json path</strong> - you have to fill this value if your location is equal to "Body". Example: "$.firstName". (<a target="__blank" href="https://jsonpath.com/">Try it out here</a>).<br>
+                    <strong>Is required</strong> - you can define the requiredness of the parameter.<br>
                 </div>
             </div>
         </div>
@@ -93,7 +95,7 @@
             </h2>
             <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#accordionExample">
                 <div class="accordion-body">
-                    <strong>Final JSON format(optional).</strong> This is the last part of your service code. In the example code you will see some code, but all you nee to know is that the result. that Database returns you can find in <code>result</code><br>
+                    <strong>Final JSON format(optional).</strong> This is the last part of your service code. In the example code you will see some code, but all you need to know is that the result that DB returns you can find in <code>result</code> object.<br>
                     And to send some response back on http request you should use <code>res.status(httpCode).send(somethingHere)</code><br>
                     Database returns object, where all object properties has UPCASE. So you need to write down some manipulations and create your own structure.<br>
                     <strong>EXAMPLE</strong><br>
@@ -113,7 +115,7 @@
                 <div class="accordion-body">
                     When you updated or created new version of the service, or created a new service, you can activate the latest versions by two ways:<br>
                     <strong>1)</strong> - you can restart the server - that will activate the newest versions of all services(if they are enabled('Is Enabled' property))<br>
-                    <strong>2)</strong> - you can use http method, where you shoul just put the parameter of version of the service. All versions in all services are unique, so there are no problems with this.<br>
+                    <strong>2)</strong> - you can use http method, where you should just put the parameter of version of the service. All versions in all services are unique, so there are no problems with this.<br>
                     Example:<br>
                     <code>http://localhost:8080/makeHttpListeners?methodId=27</code><br>
                     'methodId' property you can find in all services table in third column.<br>
@@ -128,11 +130,11 @@
             </h2>
             <div id="collapseSeven" class="accordion-collapse collapse" aria-labelledby="headingSeven" data-bs-parent="#accordionExample">
                 <div class="accordion-body">
-                    There are also some http codes, that are sent by the platform in different cases.<br>
-                    <strong>200</strong> - everything is OK<br>
-                    <strong>400</strong> - parameters are incorrect. It can appear if the name of the parameter is incorrect(password instead of Password) and also if it is required, but not sent in http request.<br>
-                    <strong>404</strong> - endpoint is not found. It could happen, if endpoint is not working or it is in the process of creating.<br>
-                    <strong>500</strong> - some server error occured. If there is error with compiling SQL code you will find string "'sql query is incorrect' + error message" in response.
+                    There are also some http codes that are sent by the platform in different cases.<br>
+                    <strong>200</strong> - Everything is OK.<br>
+                    <strong>400</strong> - Parameters are incorrect. It can appear if the name of the parameter is incorrect(password instead of Password) and also if it is required, but not sent in http request.<br>
+                    <strong>404</strong> - Endpoint is not found. It could happen, if endpoint is not working or it is in the process of creating.<br>
+                    <strong>500</strong> - Some server error occured. If there is error with compiling SQL code you will find string "'sql query is incorrect' + error message" in response.
                 </div>
             </div>
         </div>

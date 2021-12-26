@@ -1,0 +1,38 @@
+<div class="parametres">
+    <div class="parametr" v-for="(el, i) in info.PARAMS" :key="i">\
+        <div class="sminputDiv">
+            <div class="label">Name:</div>
+            <input class="input" type="text" v-model="el.NAME">
+        </div>
+        <div class="sminputDiv">
+            <div class="label">Type:</div>
+            <select v-model="el.TYPE">
+                <option disabled>Выберите тип</option>
+                <option value="Integer">Integer</option>
+                <option value="Number">Number</option>
+                <option value="String">String</option>
+            </select>
+        </div>
+        <div class="sminputDiv">
+            <div class="label">Location:</div>
+            <select v-model="el.LOCATION">
+                <option disabled>Выберите местонахождение</option>
+                <option value="URL">URL</option>
+                <option value="Header">Header</option>
+                <option value="Path">Path</option>
+                <option value="Body">Body</option>
+            </select>
+        </div>
+        <div class = "sminputDiv" v-if="el.LOCATION == 'Body'">
+            <div class="label">JSONPath:</div>
+            <input class="input" type="text" v-model="el.JSON_PATH" >
+        </div>
+        <div class="sminputDiv">
+            <div class="label">Required:</div>
+            <input class="input" type="checkbox" v-model="el.IS_REQUIRED">
+        </div>
+        <hr/>
+    </div>
+</div>
+<div class="smbut" style="background-color: grey; margin-bottom: 10px" @click="addParam">Add parameter</div>
+<div class="smbut" style="background-color: red" @click="removeParam">Remove parameter</div>

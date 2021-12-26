@@ -1,0 +1,20 @@
+<div class="inputDiv">
+    <div class="label">Version name: </div>
+    <input class="input" type="text" v-model="info.VERSION_NAME">
+</div>
+<div class="inputDiv">
+    <div class="label">Description: </div>
+    <textarea v-model="info.DESCRIPTION"></textarea>
+</div>
+<div class="inputDiv">
+    <div class="label">Endpoint: </div>
+    <input class="input" type="text" readonly v-model="info.ENDPOINT">
+</div>
+<div class="inputDiv">
+    <div class="label">Http method: </div>
+    <input type="text" readonly v-model="info.HTTP_METHOD">
+</div>
+<div class="inputDiv">
+    <div class="label">Is Enabled: </div>
+    <input class="input" type="checkbox" disabled="true" v-model="info.IS_ENABLED">
+</div>

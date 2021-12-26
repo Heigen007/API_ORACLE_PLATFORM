@@ -1,40 +1,10 @@
 Vue.component('create-new-service', {
-    data: function () {
-        return {
-            info:{
-                ENDPOINT: "",
-                VERSION_NAME: "",
-                IS_ENABLED: true,
-                SQL_CODE: "",
-                HTTP_METHOD: "",
-                PARAMS: [],
-                pool:{
-                    CONNECT_STRING: "",
-                    POOL_USER: "",
-                    POOL_PASSWORD: "",
-                    POOL_MAX: 1,
-                    POOL_MIN: 1,
-                    POOL_TIMEOUT: 60,
-                    POOL_PING_INTERVAL: 60,
-                    QUEUE_MAX: 500,
-                    QUEUE_TIMEOUT: 60000
-                },
-                JSON_CONFIG: "",
-                DESCRIPTION: ""
-            },
-            selectedObject: {}
-        }
-    },
+    <%- include('./jsParts/componentData'); %>
     props: {
         services: Array
     },
     methods:{
-        addParam(){
-            this.info.PARAMS.push({NAME: '',TYPE:'',LOCATION:'',IS_REQUIRED:false, JSON_PATH:""})
-        },
-        removeParam(){
-            this.info.PARAMS.pop()
-        },
+        <%- include('./jsParts/paramsManipulations'); %>
         createService(){
             if(!this.checkData()) return
             var url = window.location.href
@@ -124,12 +94,9 @@ Vue.component('create-new-service', {
             })
             services = [...new Set(services)]
             services.push(this.info.ENDPOINT + "/")
-            console.log(services,"lllllllllll");
             for (let i = 0; i < services.length; i++) {
                 for (let o = 0; o < services.length; o++) {
-                    console.log(services[i].includes(services[o]), services[o].includes(services[i]), services[i], services[o]);
                     if((services[i].includes(services[o]) || services[o].includes(services[i])) && o != i) {
-                        console.log("includes true", services[i],services[o]);
                         bool = true;
                         boolArr[0] = services[i]
                         boolArr[1] = services[o]
@@ -167,97 +134,14 @@ Vue.component('create-new-service', {
             <input class="input" type="checkbox" v-model="info.IS_ENABLED">
         </div>
         <h2>Pool parameters:</h2>
-        <div class = "flexBoxC">
-            <div class="inputDiv">
-                <div class="label">user: </div>
-                <input class="input" type="text" v-model="info.pool.POOL_USER">
-            </div>
-            <div class="inputDiv">
-                <div class="label">password: </div>
-                <input class="input" type="text" v-model="info.pool.POOL_PASSWORD">
-            </div>
-            <div class="inputDiv">
-                <div class="label">connectString: </div>
-                <input class="input" type="text" v-model="info.pool.CONNECT_STRING">
-            </div>
-            <div class="inputDiv">
-                <div class="label">poolMin: </div>
-                <input class="input" type="number" v-model="info.pool.POOL_MIN">
-            </div>
-            <div class="inputDiv">
-                <div class="label">poolMax: </div>
-                <input class="input" type="number" v-model="info.pool.POOL_MAX">
-            </div>
-            <div class="inputDiv">
-                <div class="label">poolTimeout: </div>
-                <input class="input" type="number" v-model="info.pool.POOL_TIMEOUT">
-            </div>
-            <div class="inputDiv">
-                <div class="label">poolPingInterval: </div>
-                <input class="input" type="number" v-model="info.pool.POOL_PING_INTERVAL">
-            </div>
-            <div class="inputDiv">
-                <div class="label">queueMax: </div>
-                <input class="input" type="number" v-model="info.pool.QUEUE_MAX">
-            </div>
-            <div class="inputDiv">
-                <div class="label">queueTimeout: </div>
-                <input class="input" type="number" v-model="info.pool.QUEUE_TIMEOUT">
-            </div>
-        </div>
+        <%- include('./htmlParts/poolParams'); %>
         <h2 class="mt-2">Parameters:</h2>
-        <div class="parametres">
-            <div class="parametr" v-for="(el, i) in info.PARAMS" :key="i">\
-                <div class="sminputDiv">
-                    <div class="label">Name:</div>
-                    <input class="input" type="text" v-model="el.NAME">
-                </div>
-                <div class="sminputDiv">
-                    <div class="label">Type:</div>
-                    <select v-model="el.TYPE">
-                        <option disabled>Выберите тип</option>
-                        <option value="Integer">Integer</option>
-                        <option value="Number">Number</option>
-                        <option value="String">String</option>
-                    </select>
-                </div>
-                <div class="sminputDiv">
-                    <div class="label">Location:</div>
-                    <select v-model="el.LOCATION">
-                        <option disabled>Выберите местонахождение</option>
-                        <option value="URL">URL</option>
-                        <option value="Header">Header</option>
-                        <option value="Path">Path</option>
-                        <option value="Body">Body</option>
-                    </select>
-                </div>
-                <div class = "sminputDiv" v-if="el.LOCATION == 'Body'">
-                    <div class="label">JSONPath:</div>
-                    <input class="input" type="text" v-model="el.JSON_PATH" >
-                </div>
-                <div class="sminputDiv">
-                    <div class="label">Required:</div>
-                    <input class="input" type="checkbox" v-model="el.IS_REQUIRED">
-                </div>
-                <hr/>
-            </div>
-        </div>
-        <div class="smbut" style="background-color: grey; margin-bottom: 10px" @click="addParam">Add parameter</div>
-        <div class="smbut" style="background-color: red" @click="removeParam">Remove parameter</div>
+        <%- include('./htmlParts/params'); %>
         <h2>SQL query:</h2>
-        <div style="font-size: 0.8em">Example on the docs page</div>
-        <div class="sqlQuery">
-            <div class="inputDiv">
-                <textarea class="input resisableArea" type="text" v-model="info.SQL_CODE"></textarea>
-            </div>
-        </div>
+        <%- include('./htmlParts/sqlCode'); %>
         <h2>Final JSON format:</h2>
         <div style="font-size: 0.8em">Find more information on docs page</div>
-        <div class="sqlQuery">
-            <div class="inputDiv">
-                <textarea class="input resisableArea" type="text" v-model="info.JSON_CONFIG"></textarea>
-            </div>
-        </div>
+        <%- include('./htmlParts/jsonCode'); %>
         <div class="but create mt" @click='createService'>Create</div>
     </div>
     `
