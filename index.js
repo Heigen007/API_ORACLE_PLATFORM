@@ -2,7 +2,6 @@ var express = require('express');
 var app = express();
 var compression = require('compression')
 var cors = require('cors');
-var md5 = require('blueimp-md5')
 
 const mypw = "(DESCRIPTION =(ADDRESS_LIST =(LOAD_BALANCE = yes)(FAILOVER = on)(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.155)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.154)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.153)(PORT = 1521)))(CONNECT_DATA =(SERVER = DEDICATED)(SERVICE_NAME = ars)(FAILOVER_MODE =(TYPE = SELECT)(METHOD = BASIC)(RETRIES = 5)(DELAY = 15))))"
 const port = 3000
@@ -11,14 +10,13 @@ const pass = "dfc09073e0bfd69aadbcc433386d5575"
 const oracledb = require('oracledb');
 const createService = require("./createService")
 const createNewVersion = require("./createNewVersion")
-const getServices = require("./getServices.js")
+const getServices = require("./getServices")
 const getServiceInfo = require("./getServiceInfo")
 const updateVersion = require("./updateService");
 const createLog = require("./createLog")
-const checkParameter = require("./checkParameter")
 const findAdditionalPathString = require("./findAdditionalPathString")
 const createDBPool = require("./createDBPool");
-const parseSql = require("./parseSql");
+const method = require("./method")
 
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT
 oracledb.fetchAsString = [ oracledb.CLOB ];
@@ -30,23 +28,21 @@ app.use(cors())
 app.use(express.json());
 
 async function init() {
-    try {
-      await oracledb.createPool({
-        user          : "ARADMIN_CUSTOM_REST",
-        password      : "ARS_REST_55pw",
-        connectString : mypw,
-        poolMax       : 3,
-        poolMin       : 3
-      });
-      // "app.listen(port, "127.0.0.1", () => {",
-      app.listen(port, () => {
-        createLog('MAIN_PROCESS_CONNECTION', 'SUCCESS', 'Server started')
-        makeMAINHttpListeners()
-      })
-  
-    } catch (err) {
-      createLog('MAIN_PROCESS_CONNECTION', 'ERROR', err)
-    }
+  try {
+    await oracledb.createPool({
+      user          : "ARADMIN_CUSTOM_REST",
+      password      : "ARS_REST_55pw",
+      connectString : mypw,
+      poolMax       : 3,
+      poolMin       : 3
+    });
+    app.listen(port, () => {
+      createLog('MAIN_PROCESS_CONNECTION', 'SUCCESS', 'Server started')
+      makeMAINHttpListeners()
+    })
+  } catch (err) {
+    createLog('MAIN_PROCESS_CONNECTION', 'ERROR', err)
+  }
 }
 
 init()
@@ -66,6 +62,7 @@ app.get('/getServices', async function(req, res) {
   createLog('getServices', 'ERROR', 'Error with getServices part')
   res.status(500).send('Error with getServices part')
 });
+
 app.post('/createService', async function(req, res) {
   var result = await createService(oracledb, req.body)
   if(result[0]) {
@@ -75,12 +72,14 @@ app.post('/createService', async function(req, res) {
   res.status(500).send('Error with createService part(' + result[1] + ')')
   createLog('getServiceInfo', 'ERROR', 'Error with createService part(' + result[1] + ')')
 });
+
 app.post('/getServiceInfo', async function(req, res) {
   var result = await getServiceInfo(oracledb, req.body)
   if(result[0]) return res.send(result[1].rows[0]);
   res.status(500).send('Error with createService part(' + result[1] + ')')
   createLog('getServiceInfo', 'ERROR', 'Error with createService part(' + result[1] + ')')
 });
+
 app.post('/createNewVersion', async function(req, res) {
   var result = await createNewVersion(oracledb, req.body)
   if(result[0]) {
@@ -90,6 +89,7 @@ app.post('/createNewVersion', async function(req, res) {
   res.status(500).send('Error with createNewVersion part(' + result[1] + ')')
   createLog('updateVersion(' + req.body.VERSION_NAME + ')', 'ERROR', 'Error with createNewVersion part(' + result[1] + ')')
 });
+
 app.post('/updateVersion', async function(req, res) {
   var result = await updateVersion(oracledb, req.body)
   if(result[0]) {
@@ -99,6 +99,7 @@ app.post('/updateVersion', async function(req, res) {
   res.status(500).send('Error with updateVersion part(' + result[1] + ')')
   createLog('updateVersion(' + req.body.VERSION_NAME + ')', 'ERROR', 'Error with updateVersion part(' + result[1] + ')')
 });
+
 app.get('/updateHttpListener', async function(req, res) {
   if(!req.query.methodId) {
     createLog('updateHttpListener', 'ERROR', 'methodId has not been sent')
@@ -207,85 +208,12 @@ async function updateHttpListener(methodId){
     });
     if(el.HTTP_METHOD == "GET") {
       app.get("/" + el.ENDPOINT + additionalPathString, async function(req,res) {
-        await method(req,res)
+        await method(req, res, el, params, oracledb)
       })      
     } else if (el.HTTP_METHOD == "POST") {
       app.post("/" + el.ENDPOINT + additionalPathString, async function(req,res) {
-        await method(req,res)
+        await method(req, res, el, params, oracledb)
       })     
-    }
-    async function method(req, res){
-      var result;
-      var sqlString = el.SQL_CODE
-      if(params){
-        var paramsArr = []
-        var parMap = []
-        var isErr = [0,0]
-        params.forEach(el2 => {
-          result = checkParameter(req,el2)
-          if(!result[0]) {isErr[1] = result[1]; return isErr[0] = 1}
-          if(result[1] != "NOT_GIVEN") {
-            paramsArr.push(el2.NAME)
-            parMap.push({name: el2.NAME, type: el2.TYPE, result: result[1]})
-          }
-        })
-        if(isErr[0]) return res.status(400).send(isErr[1])
-        sqlString = parseSql(sqlString,paramsArr,parMap)
-        try {
-          var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
-        }
-        catch (err) {
-          createLog(req.originalUrl, 'ERROR', err, req.headers.host)
-          return res.status(500).send("Connection to the database is impossible")
-        }
-        try {
-          var result = await connection2.execute(sqlString);
-          await connection2.close()
-        } catch (err) {
-          createLog(req.originalUrl, 'ERROR', err)
-          return res.status(500).send("sql query is incorrect: " + err)
-        }
-        try{
-          if(el.JSON_CONFIG){
-            eval(el.JSON_CONFIG)
-            createLog(req.originalUrl, 'Success', 'Response was returned successfully with custom json format', req.headers.host)
-          } else {
-            createLog(req.originalUrl, 'Success', 'Response was returned successfully(' + result.rows.length +' records)', req.headers.host)
-            return res.send(result)
-          }
-        } catch (err) {
-          createLog(req.originalUrl, 'ERROR', err)
-          return res.status(500).send("JSON code is incorrect: " + err)
-        }
-      } else {
-        try {
-          var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
-        }
-        catch (err) {
-          createLog(req.originalUrl, 'ERROR', err, req.headers.host)
-          return res.status(500).send("Connection to the database is impossible")
-        }
-        try {
-          var result = await connection2.execute(sqlString);
-          await connection2.close()
-        } catch (err) {
-          createLog(req.originalUrl, 'ERROR', err)
-          return res.status(500).send("sql query is incorrect: " + err)
-        }
-        try{
-          if(el.JSON_CONFIG){
-            eval(el.JSON_CONFIG)
-            createLog(req.originalUrl, 'Success', 'Response was returned successfully with custom json format', req.headers.host)
-          } else {
-            createLog(req.originalUrl, 'Success', 'Response was returned successfully(' + result.rows.length +' records)', req.headers.host)
-            return res.send(result)
-          }
-        } catch (err) {
-          createLog(req.originalUrl, 'ERROR', err)
-          return res.status(500).send("JSON code is incorrect: " + err)
-        }
-      }
-      sqlString = null
     }
     return 1
   }
@@ -389,85 +317,12 @@ async function forLoopClosure(lastMethodsVersions, indexM){
     var additionalPathString = findAdditionalPathString(params)
     if(el.HTTP_METHOD == "GET") {
       app.get("/" + el.ENDPOINT + additionalPathString, async function(req,res) {
-        await method(req,res)
+        await method(req, res, el, params, oracledb)
       })      
     } else if (el.HTTP_METHOD == "POST") {
       app.post("/" + el.ENDPOINT + additionalPathString, async function(req,res) {
-        await method(req,res)
+        await method(req, res, el, params, oracledb)
       })     
-    }
-    async function method(req,res){
-      var result;
-      var sqlString = el.SQL_CODE
-      if(params){
-        var paramsArr = []
-        var parMap = []
-        var isErr = [0,0]
-        params.forEach(el2 => {
-          result = checkParameter(req,el2)
-          if(!result[0]) {isErr[1] = result[1]; return isErr[0] = 1}
-          if(result[1] != "NOT_GIVEN"){
-            paramsArr.push(el2.NAME)
-            parMap.push({name: el2.NAME, type: el2.TYPE, result: result[1]})
-          }
-        })
-        if(isErr[0]) return res.status(400).send(isErr[1])
-        sqlString = parseSql(sqlString,paramsArr,parMap)
-        try {
-          var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
-        }
-        catch (err) {
-          createLog(req.originalUrl, 'ERROR', err, req.headers.host)
-          return res.status(500).send("Connection to the database is impossible")
-        }
-        try {
-          var result = await connection2.execute(sqlString);
-          await connection2.close()
-        } catch (err) {
-          createLog(req.originalUrl, 'ERROR', err)
-          return res.status(500).send("sql query is incorrect: " + err)
-        }
-        try{
-          if(el.JSON_CONFIG){
-            eval(el.JSON_CONFIG)
-            createLog(req.originalUrl, 'Success', 'Response was returned successfully with custom json format', req.headers.host)
-          } else {
-            createLog(req.originalUrl, 'Success', 'Response was returned successfully(' + result.rows.length +' records)', req.headers.host)
-            return res.send(result)
-          }
-        } catch (err) {
-          createLog(req.originalUrl, 'ERROR', err)
-          return res.status(500).send("JSON code is incorrect: " + err)
-        }
-      } else {
-        try {
-          var connection2 = await oracledb.getConnection("endpoint"+el.ENDPOINT);
-        }
-        catch (err) {
-          createLog(req.originalUrl, 'ERROR', err, req.headers.host)
-          return res.status(500).send("Connection to the database is impossible")
-        }
-        try {
-          var result = await connection2.execute(sqlString);
-          await connection2.close()
-        } catch (err) {
-          createLog(req.originalUrl, 'ERROR', err)
-          return res.status(500).send("sql query is incorrect: " + err)
-        }
-        try{
-          if(el.JSON_CONFIG){
-            eval(el.JSON_CONFIG)
-            createLog(req.originalUrl, 'Success', 'Response was returned successfully with custom json format', req.headers.host)
-          } else {
-            createLog(req.originalUrl, 'Success', 'Response was returned successfully(' + result.rows.length +' records)', req.headers.host)
-            return res.send(result)
-          }
-        } catch (err) {
-          createLog(req.originalUrl, 'ERROR', err)
-          return res.status(500).send("JSON code is incorrect: " + err)
-        }
-      }
-      sqlString = null
     }
 }
 
