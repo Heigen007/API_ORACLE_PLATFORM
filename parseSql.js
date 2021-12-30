@@ -25,12 +25,11 @@ function parseSql(sqlCode, params, parMap){
         finalSql = finalSql.split("${")
         var g
         finalSql = finalSql.map(el => {
-        smth = el.split("}", 2)
-        if(smth.length > 1){
-            g = parMap.find(el => el.name == smth[0])
-            if(g.type != "String") return g.result + smth[1]
-            else return "'" + g.result + "'" + smth[1]
-        } else return el
+            smth = el.split("}", 2)
+            if(smth.length > 1){
+                g = parMap.find(el => el.name == smth[0])
+                return g.result + smth[1]
+            } else return el
         })
         return finalSql.join("")
     }

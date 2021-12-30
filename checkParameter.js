@@ -30,7 +30,7 @@ function checkParameter(req,el) {
     }
     catch (err) {
       createLog('CHECK_PARAMETER', 'ERROR', err)
-      return [0]
+      return [0, err]
     }
 }
 
