@@ -5,6 +5,7 @@
 <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
 <script src="http://www.myersdaily.org/joseph/javascript/md5.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 <style>
     *{
         scrollbar-color: #bdb8ff;
@@ -21,6 +22,15 @@
         display: flex;
         flex-direction: column;
         align-items: center;
+    }
+    .flex{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .settings{
+        width: 100%;
     }
     #accordionExample{
         width: 95vw;
@@ -163,6 +173,11 @@
     .security div{
         display: flex;
         justify-content: center;
+        align-items: center;
+    }
+    .flSA{
+        display: flex;
+        justify-content: space-around;
         align-items: center;
     }
     .security button{

@@ -34,12 +34,14 @@
                 <div class="but create" v-bind:class="{ chosen: chosenPage == 'create-new-service'}" @click='chosenPage = "create-new-service"'>Create new</div>
                 <div class="but edit" v-bind:class="{ chosen: chosenPage == 'update-service'}" @click='chosenPage = "update-service"'>Create version from selected</div>
                 <div class="but edit" v-bind:class="{ chosen: chosenPage == 'update-version'}" @click='chosenPage = "update-version"'>Update selected version</div>
+                <div class="but edit" v-bind:class="{ chosen: chosenPage == 'check-endpoint'}" @click='chosenPage = "check-endpoint"'>Check endpoint</div>
             </div>
             <div v-if="!isModal" class="mainBody">
                 <keep-alive>
                     <create-new-service v-if="chosenPage == 'create-new-service'" :services = "services"></create-new-service>
                     <update-service v-if="chosenPage == 'update-service'" :selected-object="selectedObject"></update-service>
                     <update-version v-if="chosenPage == 'update-version'" :selected-object="selectedObject"></update-version>
+                    <check-endpoint v-if="chosenPage == 'check-endpoint'" :selected-object="selectedObject"></check-endpoint>
                 </keep-alive>
             </div>
         </div>
@@ -48,10 +50,11 @@
     
     
     <script>
-        Vue.config.devtools = true;
+        // Vue.config.devtools = true;
         <%- include('./components/createNewService'); %>
         <%- include('./components/updateService'); %>
         <%- include('./components/updateVersion'); %>
+        <%- include('./components/checkEndpoint'); %>
         new Vue({
             el: '#app',
             data: {

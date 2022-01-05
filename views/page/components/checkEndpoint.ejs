@@ -1,0 +1,127 @@
+Vue.component('check-endpoint', {
+    <%- include('./jsParts/componentData'); %>
+    props: {
+        selectedObject: Object
+    },
+    watch: {
+        selectedObject: function () {
+            if(this.selectedObject.ENDPOINT) this.getInfo()
+        },
+    },
+    mounted(){
+        if(this.selectedObject.ENDPOINT) this.getInfo()
+    },
+    methods:{
+        findHeaders(){
+            this.setEndpoint()
+            var arr = []
+            this.info.PARAMS.forEach(el => {
+                if (el.LOCATION == "Header"){
+                    arr.push([el.NAME, ""])
+                }
+            })
+            this.info.headers = arr
+        },
+        setEndpoint(){
+            var url = window.location.href + this.info.ENDPOINT
+            this.info.PARAMS.forEach(el => {
+                if (el.LOCATION == "Path"){
+                    url+= ("/" + el.NAME.toUpperCase())
+                }
+            })
+            url += "?"
+            this.info.PARAMS.forEach(el => {
+                if (el.LOCATION == "URL"){
+                    if(el.TYPE == "String") url+= (el.NAME + "=" +"someVal&")
+                    else url+= (el.NAME + "=" +"999&")
+                }
+            })
+            url = url.slice(0,url.length - 1)
+            this.info.httpCode = url
+        },
+        sendReq(){
+            var headers = {}
+            for(let i = 0; i < this.info.headers.length; i++) {
+                headers[this.info.headers[i][0]] = this.info.headers[i][1]
+            }
+            var self = this
+            axios({
+                url: this.info.httpCode,
+                method: this.info.HTTP_METHOD.toLowerCase(),
+                headers: headers,
+                data: JSON.parse(this.info.httpBody)
+            })
+            .then(res => {
+                self.info.response = JSON.stringify(res.data)
+                self.responseStatus = res.status
+                this.chColor(res.status)
+            })
+            .catch(err => {
+                this.info.response = err
+                self.responseStatus = err.response.status
+                this.chColor(err.response.status)
+            })
+        },
+        chColor(color){
+            if(color.toString()[0] == 1) {
+                return this.color = "color: #34ccbe"
+            }
+            if(color.toString()[0] == 2) {
+                return this.color = "color: #2db62d"
+            }
+            if(color.toString()[0] == 3) {
+                return this.color = "color: #f6e300"
+            }
+            if(color.toString()[0] == 4) {
+                return this.color = "color: red"
+            }
+            if(color.toString()[0] == 5) {
+                return this.color = "color: red"
+            }
+            this.color = "color: black"
+        },
+        <%- include('./jsParts/getInfo'); %>
+    },
+    computed: {
+        isHeadersPart(){
+            var check = false
+            this.info.PARAMS.forEach(el => {
+                if (el.LOCATION == "Header") check = true
+            })
+            return check
+        }
+    },
+    template: 
+    `
+    <div class="mdiv" style="padding: 50px; gap: 20px" v-if="this.selectedObject.ENDPOINT">
+        <div class = "flex" style="width: 60vw">
+            <input type="text" style = "text-align: center; width: 60px; margin-right: 50px" readonly v-model="info.HTTP_METHOD">
+            <input type="text" v-model = "info.httpCode">
+        </div>
+        <div v-if="info.HTTP_METHOD == 'POST'">
+            <h3>Body</h3>
+            <div class = "flex" style="width: 60vw">
+                <textarea class="input resisableArea" type="text" v-model="info.httpBody"></textarea>
+            </div>
+        </div>
+        <div v-if="isHeadersPart">
+            <h3>Headers</h3>
+            <div class = "flex" style="width: 60vw; flex-direction: column;" >
+                <div class="inputDiv" v-for="(el,i) in info.headers" :key="i">
+                    <div class="label">{{el[0]}}</div>
+                    <input class="input" type="text" v-model="el[1]">
+                </div>
+            </div>
+        </div>
+        <div class = "flex" style="width: 60vw; flex-direction: column;" >
+            <div class="but create" @click="sendReq">Send request</div>
+        </div>
+        <div>
+            <div class="flSA"><h3>Response</h3><h1 :style="info.color">{{info.responseStatus}}</h1></div>
+            <div class = "flex" style="width: 60vw">
+                <textarea class="input resisableArea" type="text" v-model="info.response"></textarea>
+            </div>
+        </div>
+    </div>
+    `
+})

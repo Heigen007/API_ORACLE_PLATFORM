@@ -26,7 +26,6 @@ app.set('view cache', true);
 app.use(compression())
 app.use(cors())
 app.use(express.json());
-
 async function init() {
   try {
     await oracledb.createPool({
@@ -49,6 +48,10 @@ init()
 
 app.get('/', function(req, res) {
   res.render('page/index');
+});
+
+app.get('/favicon.ico', function(req, res) {
+  res.sendStatus(200)
 });
 
 app.get('/checkPassword', function(req, res) {

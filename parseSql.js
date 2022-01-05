@@ -8,19 +8,17 @@ function parseSql(sqlCode, params, parMap){
         var sql = sqlCode
         const separators = ['<if', '</if>']
         const paramSeparators = ['testParameter=\'', '\'>']
-        
         const result = sql.split(new RegExp(separators.join('|'), 'g'));
         for(let i = 0; i < result.length; i++){
-        if(!result[i].includes('testParameter')) finalSql += result[i]
-        else{
-            par = result[i].split(new RegExp(paramSeparators.join('|'), 'g'));
-    
-            for (let index = 0; index < params.length; index++) {
-            if(params[index] == par[1]) {
-                finalSql += par[2]
+            if(!result[i].includes('testParameter')) finalSql += result[i]
+            else{
+                par = result[i].split(new RegExp(paramSeparators.join('|'), 'g'));
+                for (let index = 0; index < params.length; index++) {
+                    if(params[index] == par[1]) {
+                        finalSql += par[2]
+                    }
+                }
             }
-            }
-        }
         }
         finalSql = finalSql.split("${")
         var g

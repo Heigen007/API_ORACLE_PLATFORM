@@ -13,17 +13,24 @@ getInfo(){
     })
     .then(res => {
         copy = res
+        copy.httpBody = `{
+    "id": "9999"
+}`
         copy.pool = {
-            CONNECT_STRING: copy.CONNECT_STRING,
-            POOL_USER: copy.POOL_USER,
-            POOL_PASSWORD: copy.POOL_PASSWORD,
-            POOL_MAX: copy.POOL_MAX,
-            POOL_MIN: copy.POOL_MIN,
-            POOL_TIMEOUT: copy.POOL_TIMEOUT,
+            CONNECT_STRING:     copy.CONNECT_STRING,
+            POOL_USER:          copy.POOL_USER,
+            POOL_PASSWORD:      copy.POOL_PASSWORD,
+            POOL_MAX:           copy.POOL_MAX,
+            POOL_MIN:           copy.POOL_MIN,
+            POOL_TIMEOUT:       copy.POOL_TIMEOUT,
             POOL_PING_INTERVAL: copy.POOL_PING_INTERVAL,
-            QUEUE_MAX: copy.QUEUE_MAX,
-            QUEUE_TIMEOUT: copy.QUEUE_TIMEOUT
+            QUEUE_MAX:          copy.QUEUE_MAX,
+            QUEUE_TIMEOUT:      copy.QUEUE_TIMEOUT
         }
+        copy.response = ""
+        copy.responseStatus = ""
+        copy.color = ""
         this.info = copy
+        try{this.findHeaders()}catch{}
     })
 }
