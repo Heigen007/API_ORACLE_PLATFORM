@@ -3,7 +3,8 @@ var app = express();
 var compression = require('compression')
 var cors = require('cors');
 
-const mypw = "(DESCRIPTION =(ADDRESS_LIST =(LOAD_BALANCE = yes)(FAILOVER = on)(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.155)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.154)(PORT = 1521))(ADDRESS = (PROTOCOL = TCP)(HOST = 10.8.70.153)(PORT = 1521)))(CONNECT_DATA =(SERVER = DEDICATED)(SERVICE_NAME = ars)(FAILOVER_MODE =(TYPE = SELECT)(METHOD = BASIC)(RETRIES = 5)(DELAY = 15))))"
+//tnsnames.ora - mypw
+const mypw = "xxx"
 const port = 3000
 const pass = "dfc09073e0bfd69aadbcc433386d5575"
 
@@ -29,8 +30,8 @@ app.use(express.json());
 async function init() {
   try {
     await oracledb.createPool({
-      user          : "ARADMIN_CUSTOM_REST",
-      password      : "ARS_REST_55pw",
+      user          : "xxx",
+      password      : "xxx",
       connectString : mypw,
       poolMax       : 3,
       poolMin       : 3
