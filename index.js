@@ -36,9 +36,10 @@ async function init() {
       poolMin       : 3
     });
     app.listen(port, () => {
-      createLog('MAIN_PROCESS_CONNECTION', 'SUCCESS', 'Server started')
       makeMAINHttpListeners()
+      createLog('MAIN_PROCESS_CONNECTION', 'SUCCESS', 'Server started')
     })
+    
   } catch (err) {
     createLog('MAIN_PROCESS_CONNECTION', 'ERROR', err)
   }
@@ -328,6 +329,10 @@ async function forLoopClosure(lastMethodsVersions, indexM){
       })     
     }
 }
+
+app.get('/checkStatus', (req, res) => {
+  res.sendStatus(200)
+})
 
 //http://localhost:8080/updateHttpListener?methodId=27
 //http://localhost:8080/endpoint1/12?name=h
